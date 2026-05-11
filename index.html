@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công Cụ PDF Thông Minh</title>
+    <title>Công Cụ PDF Thông Minh THẦY LỰC</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -18,24 +18,34 @@
     </script>
     <style>
         .loader {
-            width: 16px;
-            height: 16px;
-            border: 2px solid #FFF;
-            border-bottom-color: transparent;
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
+            width: 16px; height: 16px;
+            border: 2px solid #FFF; border-bottom-color: transparent;
+            border-radius: 50%; display: inline-block;
+            box-sizing: border-box; animation: rotation 1s linear infinite;
         }
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        /* Custom scrollbar for gallery */
+        @keyframes rotation { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+
+        /* Scrollbar */
         .preview-scroll::-webkit-scrollbar { width: 6px; }
         .preview-scroll::-webkit-scrollbar-track { background: #1e293b; }
         .preview-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         .preview-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* Mode cards */
+        .mode-card { cursor: pointer; user-select: none; }
+        .mode-card:active { transform: scale(0.96) !important; }
+
+        /* Position picker */
+        .pos-btn { transition: all .15s; }
+        .pos-btn.pos-active { color: #fff !important; }
+
+        /* Signature canvas */
+        #signatureCanvas {
+            touch-action: none;
+            background: repeating-linear-gradient(0deg,#f8fafc 0,#f8fafc 1px,transparent 1px,transparent 32px),
+                        repeating-linear-gradient(90deg,#f8fafc 0,#f8fafc 1px,transparent 1px,transparent 32px);
+            background-color: #fff;
+        }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 min-h-screen">
@@ -58,37 +68,73 @@
             </p>
         </div>
 
-        <div class="flex justify-center mt-6 mb-8">
-            <div class="bg-slate-200/80 p-1.5 rounded-xl inline-flex flex-wrap justify-center gap-1.5 relative shadow-inner max-w-full">
-                <button id="btnModeSplit" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Cắt PDF
+        <!-- ===== MENU GRID ===== -->
+        <div class="mt-6 mb-8">
+            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 lg:gap-3">
+
+                <button id="btnModeSplit" data-mode="split" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-blue-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Cắt PDF</div><div class="text-[10px] opacity-75">Tách trang</div></div>
                 </button>
-                <button id="btnModeMerge" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> Ghép PDF
+
+                <button id="btnModeMerge" data-mode="merge" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-emerald-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Ghép PDF</div><div class="text-[10px] opacity-75">Nối file</div></div>
                 </button>
-                <button id="btnModeImage" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Ảnh -> PDF
+
+                <button id="btnModeImage" data-mode="image" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-violet-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Ảnh → PDF</div><div class="text-[10px] opacity-75">Tạo từ ảnh</div></div>
                 </button>
-                <button id="btnModeEdit" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Sửa trang
+
+                <button id="btnModeEdit" data-mode="edit" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-orange-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Sửa trang</div><div class="text-[10px] opacity-75">Xóa & xoay</div></div>
                 </button>
-                <button id="btnModeWatermark" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Đóng dấu
+
+                <button id="btnModeWatermark" data-mode="watermark" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-rose-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Đóng dấu</div><div class="text-[10px] opacity-75">Bản quyền</div></div>
                 </button>
-                <button id="btnModeProtect" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Bảo mật
+
+                <button id="btnModeProtect" data-mode="protect" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-slate-600 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Bảo mật</div><div class="text-[10px] opacity-75">Chống copy</div></div>
                 </button>
-                <button id="btnModePageNum" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg> Số trang
+
+                <button id="btnModePageNum" data-mode="pagenum" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-cyan-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Số trang</div><div class="text-[10px] opacity-75">Tự động</div></div>
                 </button>
-                <button id="btnModeExport" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Xuất ảnh
+
+                <button id="btnModeExport" data-mode="export" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-amber-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Xuất ảnh</div><div class="text-[10px] opacity-75">PDF → IMG</div></div>
                 </button>
-                <button id="btnModeCompress" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/><polyline points="17 18 12 13 7 18" opacity="0.4"/></svg> Nén PDF
+
+                <button id="btnModeCompress" data-mode="compress" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-green-600 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Nén PDF</div><div class="text-[10px] opacity-75">Giảm dung lượng</div></div>
                 </button>
+
+                <button id="btnModeSignature" data-mode="signature" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-indigo-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v9"/><path d="M15.5 19.5c.83-.83 1.5-2 1.5-3a2 2 0 0 0-4 0c0 1 .67 2.17 1.5 3l1 1 1-1z"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Chữ ký</div><div class="text-[10px] opacity-75">Chèn ký tên</div></div>
+                </button>
+
+                <button id="btnModeInsertImg" data-mode="insertimg" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-pink-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="19" y1="3" x2="19" y2="9"/><line x1="16" y1="6" x2="22" y2="6"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Chèn ảnh</div><div class="text-[10px] opacity-75">Logo, dấu...</div></div>
+                </button>
+
+                <button id="btnModeInsertText" data-mode="inserttext" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-teal-500 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Chèn chữ</div><div class="text-[10px] opacity-75">Thêm văn bản</div></div>
+                </button>
+
             </div>
         </div>
+        <!-- ===== END MENU ===== -->
 
         <div id="errorBox" class="hidden mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl items-start gap-3 flex">
             <svg class="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
@@ -654,6 +700,212 @@
                     </div>
                 </div>
 
+                <!-- ===== PANEL: Chèn chữ ký ===== -->
+                <div id="signaturePanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v9"/><path d="M15.5 19.5c.83-.83 1.5-2 1.5-3a2 2 0 0 0-4 0c0 1 .67 2.17 1.5 3l1 1 1-1z"/></svg>
+                        Chèn chữ ký vào PDF
+                    </h3>
+                    <div class="space-y-4 border-t pt-3">
+                        <!-- Chế độ -->
+                        <div class="flex gap-2">
+                            <label class="sig-mode-label flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-indigo-500 bg-indigo-50 cursor-pointer text-sm font-semibold text-indigo-700 transition-all">
+                                <input type="radio" name="sigMode" value="draw" class="hidden" checked />
+                                ✍️ Vẽ chữ ký
+                            </label>
+                            <label class="sig-mode-label flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-slate-200 cursor-pointer text-sm font-semibold text-slate-600 hover:border-indigo-300 transition-all">
+                                <input type="radio" name="sigMode" value="upload" class="hidden" />
+                                🖼️ Tải ảnh lên
+                            </label>
+                        </div>
+                        <!-- Vẽ -->
+                        <div id="sigDrawContainer">
+                            <canvas id="signatureCanvas" width="500" height="160" class="w-full border-2 border-dashed border-slate-300 rounded-xl cursor-crosshair" style="max-height:160px"></canvas>
+                            <button id="btnClearSig" class="mt-2 text-xs text-slate-500 hover:text-red-500 underline transition-colors">🗑 Xóa và vẽ lại</button>
+                        </div>
+                        <!-- Upload ảnh -->
+                        <div id="sigUploadContainer" class="hidden space-y-2">
+                            <label class="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all text-sm text-slate-600 font-medium">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                Chọn ảnh chữ ký (PNG/JPG)
+                                <input type="file" id="sigImageInput" accept="image/*" class="hidden" />
+                            </label>
+                            <img id="sigImagePreview" class="hidden max-h-28 mx-auto rounded-lg border shadow-sm" />
+                        </div>
+                        <!-- Options hàng ngang -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Chiều rộng: <span id="sigWidthVal" class="text-indigo-600 font-bold">150px</span></label>
+                                <input type="range" id="sigWidth" min="50" max="400" value="150" class="w-full accent-indigo-500" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Độ mờ: <span id="sigOpacityVal" class="text-indigo-600 font-bold">100%</span></label>
+                                <input type="range" id="sigOpacity" min="10" max="100" value="100" class="w-full accent-indigo-500" />
+                            </div>
+                        </div>
+                        <!-- Vị trí & trang -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Vị trí chèn:</label>
+                                <div class="border border-slate-200 rounded-xl p-1.5 bg-slate-50">
+                                    <div class="grid grid-cols-3 gap-1" id="sigPosPicker" data-state-key="sigPosition" data-color="indigo">
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="tl">↖</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="tc">↑</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="tr">↗</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="ml">←</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="mc">⊙</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="mr">→</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="bl">↙</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="bc">↓</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-indigo-500 border-2 border-indigo-500 text-white pos-active transition-all text-sm shadow-sm" data-pos="br">↘</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-xs font-medium text-slate-600">Áp dụng trang:</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="sigPages" value="all" checked class="accent-indigo-600" /> Tất cả</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="sigPages" value="custom" class="accent-indigo-600" /> Chỉ định</label>
+                                <input type="text" id="sigCustomPages" class="hidden w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none" placeholder="VD: 1, 3-5" />
+                            </div>
+                        </div>
+                        <button id="btnSignature" class="w-full bg-indigo-600 text-white hover:bg-indigo-700 inline-flex items-center justify-center font-medium rounded-xl px-5 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Chèn chữ ký & Tải PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ===== PANEL: Chèn ảnh vào PDF ===== -->
+                <div id="insertimgPanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-pink-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        Chèn ảnh vào PDF (Logo, con dấu...)
+                    </h3>
+                    <div class="space-y-4 border-t pt-3">
+                        <!-- Upload -->
+                        <label class="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-pink-400 hover:bg-pink-50 transition-all text-sm text-slate-600 font-medium">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Chọn ảnh cần chèn (PNG/JPG)
+                            <input type="file" id="insertImgInput" accept="image/*" class="hidden" />
+                        </label>
+                        <div id="insertImgPreviewBox" class="hidden text-center">
+                            <img id="insertImgPreview" class="max-h-24 mx-auto rounded-lg border shadow-sm" />
+                            <p id="insertImgName" class="text-xs text-slate-400 mt-1"></p>
+                        </div>
+                        <!-- Size & Opacity -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Kích thước: <span id="insertImgSizeVal" class="text-pink-600 font-bold">30%</span> trang</label>
+                                <input type="range" id="insertImgSize" min="5" max="90" value="30" class="w-full accent-pink-500" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Độ mờ: <span id="insertImgOpacityVal" class="text-pink-600 font-bold">100%</span></label>
+                                <input type="range" id="insertImgOpacity" min="10" max="100" value="100" class="w-full accent-pink-500" />
+                            </div>
+                        </div>
+                        <!-- Position & Pages -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Vị trí chèn:</label>
+                                <div class="border border-slate-200 rounded-xl p-1.5 bg-slate-50">
+                                    <div class="grid grid-cols-3 gap-1" id="insertImgPosPicker" data-state-key="insertImgPosition" data-color="pink">
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="tl">↖</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="tc">↑</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="tr">↗</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="ml">←</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-pink-500 border-2 border-pink-500 text-white pos-active transition-all text-sm shadow-sm" data-pos="mc">⊙</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="mr">→</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="bl">↙</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="bc">↓</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-pink-300 text-slate-400 hover:text-pink-600 transition-all text-sm shadow-sm" data-pos="br">↘</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-xs font-medium text-slate-600">Áp dụng trang:</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="insertImgPages" value="all" checked class="accent-pink-600" /> Tất cả</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="insertImgPages" value="custom" class="accent-pink-600" /> Chỉ định</label>
+                                <input type="text" id="insertImgCustomPages" class="hidden w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-pink-500 focus:outline-none" placeholder="VD: 1, 3-5" />
+                            </div>
+                        </div>
+                        <button id="btnInsertImg" class="w-full bg-pink-500 text-white hover:bg-pink-600 inline-flex items-center justify-center font-medium rounded-xl px-5 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Chèn ảnh & Tải PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ===== PANEL: Chèn văn bản ===== -->
+                <div id="inserttextPanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                        Chèn văn bản vào PDF
+                    </h3>
+                    <div class="space-y-4 border-t pt-3">
+                        <!-- Nội dung -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Nội dung văn bản:</label>
+                            <textarea id="insertTextContent" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none" placeholder="VD: Tài liệu lưu hành nội bộ&#10;Không phổ biến rộng rãi"></textarea>
+                            <p class="text-xs text-slate-400">Hỗ trợ nhiều dòng. Lưu ý: chỉ dùng ký tự không dấu.</p>
+                        </div>
+                        <!-- Cỡ chữ & Màu -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Cỡ chữ: <span id="insertTextSizeVal" class="text-teal-600 font-bold">14</span></label>
+                                <input type="range" id="insertTextSize" min="6" max="72" value="14" class="w-full accent-teal-500" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Độ mờ: <span id="insertTextOpacityVal" class="text-teal-600 font-bold">100%</span></label>
+                                <input type="range" id="insertTextOpacity" min="10" max="100" value="100" class="w-full accent-teal-500" />
+                            </div>
+                        </div>
+                        <!-- Màu chữ -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-600">Màu chữ:</label>
+                            <div class="flex gap-2 flex-wrap items-center">
+                                <button class="itxt-color-btn w-7 h-7 rounded-full border-2 border-white ring-2 ring-slate-800 shadow" style="background:#1e293b" data-r="0.12" data-g="0.16" data-b="0.23"></button>
+                                <button class="itxt-color-btn w-7 h-7 rounded-full border-2 border-white shadow" style="background:#ef4444" data-r="0.94" data-g="0.27" data-b="0.27"></button>
+                                <button class="itxt-color-btn w-7 h-7 rounded-full border-2 border-white shadow" style="background:#2563eb" data-r="0.15" data-g="0.39" data-b="0.92"></button>
+                                <button class="itxt-color-btn w-7 h-7 rounded-full border-2 border-white shadow" style="background:#16a34a" data-r="0.09" data-g="0.64" data-b="0.29"></button>
+                                <button class="itxt-color-btn w-7 h-7 rounded-full border-2 border-white shadow" style="background:#9333ea" data-r="0.58" data-g="0.20" data-b="0.92"></button>
+                                <label class="flex items-center gap-1 text-xs text-slate-500 cursor-pointer ml-1">
+                                    <input type="color" id="insertTextColorPicker" value="#1e293b" class="w-7 h-7 rounded border border-slate-300 cursor-pointer" />
+                                    <span>Tùy chọn</span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Vị trí & Trang -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Vị trí chèn:</label>
+                                <div class="border border-slate-200 rounded-xl p-1.5 bg-slate-50">
+                                    <div class="grid grid-cols-3 gap-1" id="insertTextPosPicker" data-state-key="insertTextPosition" data-color="teal">
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-teal-500 border-2 border-teal-500 text-white pos-active transition-all text-sm shadow-sm" data-pos="tl">↖</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="tc">↑</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="tr">↗</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="ml">←</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="mc">⊙</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="mr">→</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="bl">↙</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="bc">↓</button>
+                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-teal-300 text-slate-400 hover:text-teal-600 transition-all text-sm shadow-sm" data-pos="br">↘</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-xs font-medium text-slate-600">Áp dụng trang:</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="insertTextPages" value="all" checked class="accent-teal-600" /> Tất cả</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="insertTextPages" value="custom" class="accent-teal-600" /> Chỉ định</label>
+                                <input type="text" id="insertTextCustomPages" class="hidden w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-teal-500 focus:outline-none" placeholder="VD: 1, 3-5" />
+                            </div>
+                        </div>
+                        <button id="btnInsertText" class="w-full bg-teal-500 text-white hover:bg-teal-600 inline-flex items-center justify-center font-medium rounded-xl px-5 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Chèn văn bản & Tải PDF
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
             <div class="lg:col-span-2">
@@ -776,8 +1028,14 @@
             
             imageFiles: [],
             isProcessing: false,
-            wmColor: { r: 0.94, g: 0.27, b: 0.27 }, // Màu mặc định watermark: đỏ
-            pnColor: { r: 0.12, g: 0.16, b: 0.23 } // Màu mặc định số trang: đen xám
+            wmColor: { r: 0.94, g: 0.27, b: 0.27 },
+            pnColor: { r: 0.12, g: 0.16, b: 0.23 },
+            // Signature
+            sigPosition: 'br', sigImageBytes: null, sigImageIsPng: true,
+            // Insert image
+            insertImgPosition: 'mc', insertImgBytes: null, insertImgIsPng: true,
+            // Insert text
+            insertTextPosition: 'tl', insertTextColor: { r: 0.12, g: 0.16, b: 0.23 }
         };
 
         const el = {
@@ -845,9 +1103,15 @@
             btnModePageNum: document.getElementById('btnModePageNum'),
             btnModeExport: document.getElementById('btnModeExport'),
             btnModeCompress: document.getElementById('btnModeCompress'),
+            btnModeSignature: document.getElementById('btnModeSignature'),
+            btnModeInsertImg: document.getElementById('btnModeInsertImg'),
+            btnModeInsertText: document.getElementById('btnModeInsertText'),
             pagenumPanel: document.getElementById('pagenumPanel'),
             exportPanel: document.getElementById('exportPanel'),
             compressPanel: document.getElementById('compressPanel'),
+            signaturePanel: document.getElementById('signaturePanel'),
+            insertimgPanel: document.getElementById('insertimgPanel'),
+            inserttextPanel: document.getElementById('inserttextPanel'),
 
             previewPageText: document.getElementById('previewPageText'),
             previewEmpty: document.getElementById('previewEmpty'),
@@ -900,9 +1164,15 @@
             const btnPageNumEl   = document.getElementById('btnPageNum');
             const btnExportEl    = document.getElementById('btnExport');
             const btnCompressEl  = document.getElementById('btnCompress');
-            if(btnPageNumEl)  btnPageNumEl.disabled = isProcessing;
-            if(btnExportEl)   btnExportEl.disabled  = isProcessing;
-            if(btnCompressEl) btnCompressEl.disabled = isProcessing;
+            const btnSignatureEl = document.getElementById('btnSignature');
+            const btnInsertImgEl = document.getElementById('btnInsertImg');
+            const btnInsertTextEl= document.getElementById('btnInsertText');
+            if(btnPageNumEl)   btnPageNumEl.disabled  = isProcessing;
+            if(btnExportEl)    btnExportEl.disabled   = isProcessing;
+            if(btnCompressEl)  btnCompressEl.disabled = isProcessing;
+            if(btnSignatureEl) btnSignatureEl.disabled= isProcessing;
+            if(btnInsertImgEl) btnInsertImgEl.disabled= isProcessing;
+            if(btnInsertTextEl)btnInsertTextEl.disabled=isProcessing;
 
             if (isProcessing) {
                 if (state.appMode === 'split' && el.btnSplit) el.btnSplit.innerHTML = loadingHTML;
@@ -926,22 +1196,17 @@
         }
 
         function updateModeUI() {
-            const activeClass = "mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-blue-700 bg-white shadow-sm ring-1 ring-slate-900/5";
-            const inactiveClass = "mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200";
+            // Highlight card đang active (outline trắng + nâng lên)
+            document.querySelectorAll('.mode-card').forEach(btn => {
+                const isActive = btn.dataset.mode === state.appMode;
+                btn.style.outline    = isActive ? '3px solid white' : 'none';
+                btn.style.outlineOffset = isActive ? '2px' : '';
+                btn.style.transform  = isActive ? 'translateY(-4px) scale(1.06)' : '';
+                btn.style.boxShadow  = isActive ? '0 8px 24px rgba(0,0,0,0.28)' : '';
+            });
 
-            if(el.btnModeSplit) el.btnModeSplit.className = state.appMode === 'split' ? activeClass : inactiveClass;
-            if(el.btnModeMerge) el.btnModeMerge.className = state.appMode === 'merge' ? activeClass : inactiveClass;
-            if(el.btnModeImage) el.btnModeImage.className = state.appMode === 'image' ? activeClass : inactiveClass;
-            if(el.btnModeEdit) el.btnModeEdit.className = state.appMode === 'edit' ? activeClass : inactiveClass;
-            if(el.btnModeWatermark) el.btnModeWatermark.className = state.appMode === 'watermark' ? activeClass : inactiveClass;
-            if(el.btnModeProtect) el.btnModeProtect.className = state.appMode === 'protect' ? activeClass : inactiveClass;
-            if(el.btnModePageNum) el.btnModePageNum.className = state.appMode === 'pagenum' ? activeClass : inactiveClass;
-            if(el.btnModeExport) el.btnModeExport.className = state.appMode === 'export' ? activeClass : inactiveClass;
-            if(el.btnModeCompress) el.btnModeCompress.className = state.appMode === 'compress' ? activeClass : inactiveClass;
-
-            // Các chế độ cần file PDF mới hiển thị panel tùy chọn
-            const modesRequiringFile = ['split', 'edit', 'watermark', 'protect', 'pagenum', 'export', 'compress'];
-            const panels = ['split', 'merge', 'image', 'edit', 'watermark', 'protect', 'pagenum', 'export', 'compress'];
+            const modesRequiringFile = ['split','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext'];
+            const panels = ['split','merge','image','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext'];
 
             panels.forEach(mode => {
                 const panel = el[mode + 'Panel'];
@@ -1595,6 +1860,157 @@
             }
         }
 
+        // ---- Helpers dùng chung ----
+        function calcPosition(posCode, pageW, pageH, itemW, itemH, margin) {
+            const p = {
+                tl:{ x:margin,               y:pageH-itemH-margin },
+                tc:{ x:(pageW-itemW)/2,       y:pageH-itemH-margin },
+                tr:{ x:pageW-itemW-margin,    y:pageH-itemH-margin },
+                ml:{ x:margin,               y:(pageH-itemH)/2 },
+                mc:{ x:(pageW-itemW)/2,       y:(pageH-itemH)/2 },
+                mr:{ x:pageW-itemW-margin,    y:(pageH-itemH)/2 },
+                bl:{ x:margin,               y:margin },
+                bc:{ x:(pageW-itemW)/2,       y:margin },
+                br:{ x:pageW-itemW-margin,    y:margin },
+            };
+            return p[posCode] || p['mc'];
+        }
+
+        function getTargetIndices(mode, total, customId) {
+            if (mode === 'all')  return Array.from({length:total},(_,i)=>i);
+            if (mode === 'odd')  return Array.from({length:total},(_,i)=>i).filter(i=>(i+1)%2===1);
+            if (mode === 'even') return Array.from({length:total},(_,i)=>i).filter(i=>(i+1)%2===0);
+            if (mode === 'custom') {
+                const val = document.getElementById(customId)?.value.trim();
+                if (!val) throw new Error('Vui lòng nhập trang cụ thể.');
+                return parseRanges(val, total).map(p=>p-1);
+            }
+            return Array.from({length:total},(_,i)=>i);
+        }
+
+        // ---- Chèn chữ ký ----
+        async function executeSignature() {
+            try {
+                const PDFLibObj = getPDFLib();
+                if (!state.pdfBytes) return;
+                hideMessages(); setProcessing(true);
+
+                const sigMode = document.querySelector('input[name="sigMode"]:checked')?.value || 'draw';
+                let imgBytes, isPNG = true;
+
+                if (sigMode === 'draw') {
+                    const canvas = document.getElementById('signatureCanvas');
+                    if (!canvas) throw new Error('Canvas chữ ký không tìm thấy.');
+                    const ctx = canvas.getContext('2d');
+                    const data = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+                    const isEmpty = !Array.from(data).some((v,i)=>i%4===3&&v>0);
+                    if (isEmpty) throw new Error('Vui lòng vẽ chữ ký trước khi chèn.');
+                    const dataUrl = canvas.toDataURL('image/png');
+                    imgBytes = Uint8Array.from(atob(dataUrl.split(',')[1]),c=>c.charCodeAt(0));
+                    isPNG = true;
+                } else {
+                    if (!state.sigImageBytes) throw new Error('Vui lòng tải ảnh chữ ký lên.');
+                    imgBytes = state.sigImageBytes;
+                    isPNG = state.sigImageIsPng;
+                }
+
+                const PDFDocument = PDFLibObj.PDFDocument;
+                const pdfDoc = await PDFDocument.load(state.pdfBytes);
+                const sigWidth  = parseInt(document.getElementById('sigWidth')?.value || 150);
+                const sigOpacity= parseInt(document.getElementById('sigOpacity')?.value || 100) / 100;
+                const sigPos    = state.sigPosition || 'br';
+                const sigPages  = document.querySelector('input[name="sigPages"]:checked')?.value || 'all';
+                const indices   = getTargetIndices(sigPages, pdfDoc.getPageCount(), 'sigCustomPages');
+
+                for (const idx of indices) {
+                    const page = pdfDoc.getPages()[idx];
+                    const { width, height } = page.getSize();
+                    const img  = isPNG ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
+                    const dims = img.scaleToFit(sigWidth, sigWidth * 3);
+                    const {x,y} = calcPosition(sigPos, width, height, dims.width, dims.height, 20);
+                    page.drawImage(img, { x, y, width:dims.width, height:dims.height, opacity:sigOpacity });
+                }
+
+                const bytes = await pdfDoc.save();
+                triggerDownload(new Blob([bytes],{type:'application/pdf'}), state.file.name.replace('.pdf','_ChuKy.pdf'));
+                showSuccess(`Đã chèn chữ ký vào ${indices.length} trang thành công!`);
+            } catch(err) { showError('Lỗi chèn chữ ký: '+(err.message||'Không xác định'));
+            } finally { setProcessing(false); }
+        }
+
+        // ---- Chèn ảnh vào PDF ----
+        async function executeInsertImg() {
+            try {
+                if (!state.pdfBytes) return;
+                if (!state.insertImgBytes) throw new Error('Vui lòng tải ảnh cần chèn lên.');
+                const PDFLibObj = getPDFLib();
+                hideMessages(); setProcessing(true);
+
+                const PDFDocument = PDFLibObj.PDFDocument;
+                const pdfDoc = await PDFDocument.load(state.pdfBytes);
+                const sizePct  = parseInt(document.getElementById('insertImgSize')?.value || 30) / 100;
+                const opacity  = parseInt(document.getElementById('insertImgOpacity')?.value || 100) / 100;
+                const pos      = state.insertImgPosition || 'mc';
+                const pages    = document.querySelector('input[name="insertImgPages"]:checked')?.value || 'all';
+                const indices  = getTargetIndices(pages, pdfDoc.getPageCount(), 'insertImgCustomPages');
+
+                for (const idx of indices) {
+                    const page = pdfDoc.getPages()[idx];
+                    const { width, height } = page.getSize();
+                    const img  = state.insertImgIsPng ? await pdfDoc.embedPng(state.insertImgBytes) : await pdfDoc.embedJpg(state.insertImgBytes);
+                    const dims = img.scaleToFit(width * sizePct, height * 0.85);
+                    const {x,y} = calcPosition(pos, width, height, dims.width, dims.height, 20);
+                    page.drawImage(img, { x, y, width:dims.width, height:dims.height, opacity });
+                }
+
+                const bytes = await pdfDoc.save();
+                triggerDownload(new Blob([bytes],{type:'application/pdf'}), state.file.name.replace('.pdf','_ChenAnh.pdf'));
+                showSuccess(`Đã chèn ảnh vào ${indices.length} trang thành công!`);
+            } catch(err) { showError('Lỗi chèn ảnh: '+(err.message||'Không xác định'));
+            } finally { setProcessing(false); }
+        }
+
+        // ---- Chèn văn bản ----
+        async function executeInsertText() {
+            try {
+                if (!state.pdfBytes) return;
+                const textContent = document.getElementById('insertTextContent')?.value.trim();
+                if (!textContent) throw new Error('Vui lòng nhập nội dung văn bản.');
+                const PDFLibObj = getPDFLib();
+                hideMessages(); setProcessing(true);
+
+                const PDFDocument = PDFLibObj.PDFDocument;
+                const pdfDoc = await PDFDocument.load(state.pdfBytes);
+                const fontSize = parseInt(document.getElementById('insertTextSize')?.value || 14);
+                const opacity  = parseInt(document.getElementById('insertTextOpacity')?.value || 100) / 100;
+                const pos      = state.insertTextPosition || 'tl';
+                const color    = state.insertTextColor || { r:0.12, g:0.16, b:0.23 };
+                const pages    = document.querySelector('input[name="insertTextPages"]:checked')?.value || 'all';
+                const indices  = getTargetIndices(pages, pdfDoc.getPageCount(), 'insertTextCustomPages');
+                const font     = await pdfDoc.embedFont(PDFLibObj.StandardFonts.Helvetica);
+                const lines    = textContent.split('\n');
+                const lineH    = fontSize * 1.4;
+
+                for (const idx of indices) {
+                    const page = pdfDoc.getPages()[idx];
+                    const { width, height } = page.getSize();
+                    const maxW  = Math.max(...lines.map(l => font.widthOfTextAtSize(l, fontSize)));
+                    const totalH= lines.length * lineH;
+                    const {x, y: yBase} = calcPosition(pos, width, height, maxW, totalH, 20);
+                    lines.forEach((line, i) => {
+                        const yLine = yBase - i * lineH + (totalH - lineH);
+                        if (yLine < 5 || yLine > height + 5) return;
+                        page.drawText(line, { x, y: yLine, size: fontSize, font, color: PDFLibObj.rgb(color.r, color.g, color.b), opacity });
+                    });
+                }
+
+                const bytes = await pdfDoc.save();
+                triggerDownload(new Blob([bytes],{type:'application/pdf'}), state.file.name.replace('.pdf','_ChenChu.pdf'));
+                showSuccess(`Đã chèn văn bản vào ${indices.length} trang thành công!`);
+            } catch(err) { showError('Lỗi chèn văn bản: '+(err.message||'Không xác định'));
+            } finally { setProcessing(false); }
+        }
+
         // ---- Thêm số trang tự động ----
         async function executePageNum() {
             try {
@@ -1886,6 +2302,9 @@
         if(el.btnModePageNum) el.btnModePageNum.addEventListener('click', () => { state.appMode = 'pagenum'; updateModeUI(); });
         if(el.btnModeExport) el.btnModeExport.addEventListener('click', () => { state.appMode = 'export'; updateModeUI(); });
         if(el.btnModeCompress) el.btnModeCompress.addEventListener('click', () => { state.appMode = 'compress'; updateModeUI(); });
+        if(el.btnModeSignature) el.btnModeSignature.addEventListener('click', () => { state.appMode = 'signature'; updateModeUI(); initSignaturePad(); });
+        if(el.btnModeInsertImg) el.btnModeInsertImg.addEventListener('click', () => { state.appMode = 'insertimg'; updateModeUI(); });
+        if(el.btnModeInsertText) el.btnModeInsertText.addEventListener('click', () => { state.appMode = 'inserttext'; updateModeUI(); });
 
         if(el.btnOpenGuide) el.btnOpenGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.remove('hidden'));
         if(el.btnCloseGuide) el.btnCloseGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.add('hidden'));
@@ -2158,6 +2577,130 @@
         }));
         const btnCompress = document.getElementById('btnCompress');
         if (btnCompress) btnCompress.addEventListener('click', executeCompress);
+
+        // ===== POSITION PICKERS (dùng chung cho cả 3 panel) =====
+        document.querySelectorAll('[id$="PosPicker"]').forEach(picker => {
+            const stateKey = picker.dataset.stateKey;
+            const color    = picker.dataset.color || 'indigo';
+            picker.querySelectorAll('.pos-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    picker.querySelectorAll('.pos-btn').forEach(b => {
+                        b.classList.remove('pos-active');
+                        b.style.background = '';
+                        b.style.borderColor = '';
+                        b.style.color = '';
+                        b.classList.add('bg-white', 'border-transparent', 'text-slate-400');
+                    });
+                    btn.classList.add('pos-active');
+                    btn.classList.remove('bg-white', 'border-transparent', 'text-slate-400');
+                    btn.style.background  = getComputedBtnColor(color);
+                    btn.style.borderColor = getComputedBtnColor(color);
+                    btn.style.color = 'white';
+                    if (stateKey) state[stateKey] = btn.dataset.pos;
+                });
+            });
+        });
+        function getComputedBtnColor(colorName) {
+            const map = { indigo:'#6366f1', pink:'#ec4899', teal:'#14b8a6', cyan:'#06b6d4', rose:'#f43f5e' };
+            return map[colorName] || '#6366f1';
+        }
+
+        // ===== SIGNATURE PAD =====
+        let sigDrawing = false, sigPadInited = false;
+        function initSignaturePad() {
+            if (sigPadInited) return;
+            sigPadInited = true;
+            const canvas = document.getElementById('signatureCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+            function getXY(e) {
+                const r = canvas.getBoundingClientRect();
+                const src = e.touches ? e.touches[0] : e;
+                return { x:(src.clientX-r.left)*(canvas.width/r.width), y:(src.clientY-r.top)*(canvas.height/r.height) };
+            }
+            canvas.addEventListener('mousedown', e=>{ sigDrawing=true; const p=getXY(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
+            canvas.addEventListener('mousemove', e=>{ if(!sigDrawing)return; const p=getXY(e); ctx.lineTo(p.x,p.y); ctx.stroke(); });
+            canvas.addEventListener('mouseup',   ()=>sigDrawing=false);
+            canvas.addEventListener('mouseleave',()=>sigDrawing=false);
+            canvas.addEventListener('touchstart', e=>{ e.preventDefault(); sigDrawing=true; const p=getXY(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }, {passive:false});
+            canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); if(!sigDrawing)return; const p=getXY(e); ctx.lineTo(p.x,p.y); ctx.stroke(); }, {passive:false});
+            canvas.addEventListener('touchend',   ()=>sigDrawing=false);
+        }
+        const btnClearSig = document.getElementById('btnClearSig');
+        if (btnClearSig) btnClearSig.addEventListener('click', () => {
+            const c = document.getElementById('signatureCanvas');
+            if (c) c.getContext('2d').clearRect(0,0,c.width,c.height);
+        });
+
+        // Sig: mode toggle
+        document.querySelectorAll('input[name="sigMode"]').forEach(r => r.addEventListener('change', () => {
+            document.querySelectorAll('.sig-mode-label').forEach(l=>{ l.classList.remove('border-indigo-500','bg-indigo-50','text-indigo-700'); l.classList.add('border-slate-200','text-slate-600'); });
+            r.closest('label').classList.add('border-indigo-500','bg-indigo-50','text-indigo-700'); r.closest('label').classList.remove('border-slate-200','text-slate-600');
+            document.getElementById('sigDrawContainer')?.classList.toggle('hidden', r.value!=='draw');
+            document.getElementById('sigUploadContainer')?.classList.toggle('hidden', r.value!=='upload');
+        }));
+        // Sig: sliders
+        const sigWidthEl=document.getElementById('sigWidth'), sigWidthValEl=document.getElementById('sigWidthVal');
+        if(sigWidthEl) sigWidthEl.addEventListener('input',e=>{ if(sigWidthValEl) sigWidthValEl.textContent=e.target.value+'px'; });
+        const sigOpacityEl=document.getElementById('sigOpacity'), sigOpacityValEl=document.getElementById('sigOpacityVal');
+        if(sigOpacityEl) sigOpacityEl.addEventListener('input',e=>{ if(sigOpacityValEl) sigOpacityValEl.textContent=e.target.value+'%'; });
+        // Sig: custom pages
+        document.querySelectorAll('input[name="sigPages"]').forEach(r=>r.addEventListener('change',()=>{ document.getElementById('sigCustomPages')?.classList.toggle('hidden',r.value!=='custom'); }));
+        // Sig: upload image
+        const sigImgInput=document.getElementById('sigImageInput');
+        if(sigImgInput) sigImgInput.addEventListener('change', async e=>{
+            const f=e.target.files[0]; if(!f) return;
+            const buf=await f.arrayBuffer(); state.sigImageBytes=new Uint8Array(buf);
+            state.sigImageIsPng=f.type==='image/png'||f.name.toLowerCase().endsWith('.png');
+            const prev=document.getElementById('sigImagePreview');
+            if(prev){ prev.src=URL.createObjectURL(f); prev.classList.remove('hidden'); }
+        });
+        const btnSignature=document.getElementById('btnSignature');
+        if(btnSignature) btnSignature.addEventListener('click', executeSignature);
+
+        // ===== INSERT IMAGE =====
+        const insertImgSizeEl=document.getElementById('insertImgSize'), insertImgSizeValEl=document.getElementById('insertImgSizeVal');
+        if(insertImgSizeEl) insertImgSizeEl.addEventListener('input',e=>{ if(insertImgSizeValEl) insertImgSizeValEl.textContent=e.target.value+'%'; });
+        const insertImgOpEl=document.getElementById('insertImgOpacity'), insertImgOpValEl=document.getElementById('insertImgOpacityVal');
+        if(insertImgOpEl) insertImgOpEl.addEventListener('input',e=>{ if(insertImgOpValEl) insertImgOpValEl.textContent=e.target.value+'%'; });
+        document.querySelectorAll('input[name="insertImgPages"]').forEach(r=>r.addEventListener('change',()=>{ document.getElementById('insertImgCustomPages')?.classList.toggle('hidden',r.value!=='custom'); }));
+        const insertImgInput=document.getElementById('insertImgInput');
+        if(insertImgInput) insertImgInput.addEventListener('change', async e=>{
+            const f=e.target.files[0]; if(!f) return;
+            const buf=await f.arrayBuffer(); state.insertImgBytes=new Uint8Array(buf);
+            state.insertImgIsPng=f.type==='image/png'||f.name.toLowerCase().endsWith('.png');
+            const prev=document.getElementById('insertImgPreview'), box=document.getElementById('insertImgPreviewBox'), nm=document.getElementById('insertImgName');
+            if(prev){ prev.src=URL.createObjectURL(f); box?.classList.remove('hidden'); if(nm) nm.textContent=f.name; }
+        });
+        const btnInsertImg=document.getElementById('btnInsertImg');
+        if(btnInsertImg) btnInsertImg.addEventListener('click', executeInsertImg);
+
+        // ===== INSERT TEXT =====
+        const itxtSizeEl=document.getElementById('insertTextSize'), itxtSizeValEl=document.getElementById('insertTextSizeVal');
+        if(itxtSizeEl) itxtSizeEl.addEventListener('input',e=>{ if(itxtSizeValEl) itxtSizeValEl.textContent=e.target.value; });
+        const itxtOpEl=document.getElementById('insertTextOpacity'), itxtOpValEl=document.getElementById('insertTextOpacityVal');
+        if(itxtOpEl) itxtOpEl.addEventListener('input',e=>{ if(itxtOpValEl) itxtOpValEl.textContent=e.target.value+'%'; });
+        document.querySelectorAll('input[name="insertTextPages"]').forEach(r=>r.addEventListener('change',()=>{ document.getElementById('insertTextCustomPages')?.classList.toggle('hidden',r.value!=='custom'); }));
+        // Màu văn bản
+        document.querySelectorAll('.itxt-color-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>{
+                state.insertTextColor={r:parseFloat(btn.dataset.r),g:parseFloat(btn.dataset.g),b:parseFloat(btn.dataset.b)};
+                document.querySelectorAll('.itxt-color-btn').forEach(b=>b.style.outline='');
+                document.getElementById('insertTextColorPicker').style.outline='';
+                btn.style.outline='3px solid #0d9488';
+            });
+        });
+        const itxtColorPicker=document.getElementById('insertTextColorPicker');
+        if(itxtColorPicker) itxtColorPicker.addEventListener('input',e=>{
+            state.insertTextColor=hexToRgb01(e.target.value);
+            document.querySelectorAll('.itxt-color-btn').forEach(b=>b.style.outline='');
+            e.target.style.outline='3px solid #0d9488';
+        });
+        const btnInsertText=document.getElementById('btnInsertText');
+        if(btnInsertText) btnInsertText.addEventListener('click', executeInsertText);
 
         if(el.imageFileInput) {
             el.imageFileInput.addEventListener('change', async (e) => {
