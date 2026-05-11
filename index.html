@@ -78,6 +78,15 @@
                 <button id="btnModeProtect" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Bảo mật
                 </button>
+                <button id="btnModePageNum" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg> Số trang
+                </button>
+                <button id="btnModeExport" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Xuất ảnh
+                </button>
+                <button id="btnModeCompress" class="mode-btn relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-800 hover:bg-slate-200">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/><polyline points="17 18 12 13 7 18" opacity="0.4"/></svg> Nén PDF
+                </button>
             </div>
         </div>
 
@@ -437,6 +446,214 @@
                     </div>
                 </div>
 
+                <!-- Panel: Thêm số trang -->
+                <div id="pagenumPanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyan-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg> Thêm số trang tự động
+                    </h3>
+                    <div class="space-y-4 border-t pt-3">
+                        <!-- Vị trí -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Vị trí:</label>
+                            <div class="flex gap-2">
+                                <label class="pn-pos-label flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-sm font-medium text-slate-700 hover:border-cyan-300 transition-colors">
+                                    <input type="radio" name="pnPosition" value="bottom" class="hidden" checked /> ↓ Cuối trang
+                                </label>
+                                <label class="pn-pos-label flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 border-cyan-500 bg-cyan-50/50 cursor-pointer text-sm font-medium text-slate-700 transition-colors">
+                                    <input type="radio" name="pnPosition" value="top" class="hidden" /> ↑ Đầu trang
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Căn lề -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Căn lề:</label>
+                            <div class="flex gap-2">
+                                <label class="pn-align-label flex-1 flex items-center justify-center p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-sm font-medium text-slate-700 hover:border-cyan-300 transition-colors">
+                                    <input type="radio" name="pnAlign" value="left" class="hidden" /> Trái
+                                </label>
+                                <label class="pn-align-label flex-1 flex items-center justify-center p-2.5 rounded-lg border-2 border-cyan-500 bg-cyan-50/50 cursor-pointer text-sm font-medium text-slate-700 transition-colors">
+                                    <input type="radio" name="pnAlign" value="center" class="hidden" checked /> Giữa
+                                </label>
+                                <label class="pn-align-label flex-1 flex items-center justify-center p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-sm font-medium text-slate-700 hover:border-cyan-300 transition-colors">
+                                    <input type="radio" name="pnAlign" value="right" class="hidden" /> Phải
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Định dạng & Cỡ chữ -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-sm font-medium text-slate-700">Định dạng số:</label>
+                                <select id="pnFormat" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none bg-white">
+                                    <option value="1">1 &nbsp; 2 &nbsp; 3</option>
+                                    <option value="trang">Trang 1 &nbsp; Trang 2</option>
+                                    <option value="fraction">1/10 &nbsp; 2/10</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-sm font-medium text-slate-700">Cỡ chữ: <span id="pnSizeVal" class="text-cyan-600 font-semibold">12</span></label>
+                                <input type="range" id="pnSize" min="8" max="24" value="12" class="w-full accent-cyan-500" />
+                            </div>
+                        </div>
+                        <!-- Bắt đầu từ & Lề -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block text-sm font-medium text-slate-700">Bắt đầu từ số:</label>
+                                <input type="number" id="pnStart" min="1" value="1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-sm font-medium text-slate-700">Lề (px):</label>
+                                <input type="number" id="pnMargin" min="5" max="60" value="18" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        <!-- Màu sắc -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Màu số trang:</label>
+                            <div class="flex gap-2 items-center flex-wrap">
+                                <button class="pn-color-btn w-7 h-7 rounded-full border-2 border-white ring-2 ring-slate-800 shadow" style="background:#1e293b" data-r="0.12" data-g="0.16" data-b="0.23" title="Đen xám"></button>
+                                <button class="pn-color-btn w-7 h-7 rounded-full border-2 border-white shadow" style="background:#64748b" data-r="0.39" data-g="0.46" data-b="0.54" title="Xám"></button>
+                                <button class="pn-color-btn w-7 h-7 rounded-full border-2 border-white shadow" style="background:#2563eb" data-r="0.15" data-g="0.39" data-b="0.92" title="Xanh dương"></button>
+                                <button class="pn-color-btn w-7 h-7 rounded-full border-2 border-white shadow" style="background:#dc2626" data-r="0.86" data-g="0.15" data-b="0.15" title="Đỏ"></button>
+                                <label class="flex items-center gap-1 text-xs text-slate-500 cursor-pointer ml-1">
+                                    <input type="color" id="pnColorPicker" value="#1e293b" class="w-7 h-7 rounded cursor-pointer border border-slate-300" title="Tùy chỉnh màu" />
+                                    <span>Tùy chọn</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button id="btnPageNum" class="w-full mt-2 bg-cyan-600 text-white hover:bg-cyan-700 inline-flex items-center justify-center font-medium rounded-lg px-5 py-2.5 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Thêm số trang & Tải PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel: Xuất PDF thành ảnh -->
+                <div id="exportPanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Xuất PDF thành ảnh
+                    </h3>
+                    <div class="space-y-4 border-t pt-3">
+                        <!-- Định dạng ảnh -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Định dạng ảnh:</label>
+                            <div class="flex gap-2">
+                                <label class="exp-fmt-label flex-1 flex flex-col items-center p-3 rounded-xl border-2 border-amber-500 bg-amber-50/50 cursor-pointer text-center text-xs transition-colors">
+                                    <input type="radio" name="exportFormat" value="jpeg" class="hidden" checked />
+                                    <span class="font-bold text-slate-700">JPEG</span>
+                                    <span class="text-slate-400 mt-0.5">File nhỏ</span>
+                                </label>
+                                <label class="exp-fmt-label flex-1 flex flex-col items-center p-3 rounded-xl border-2 border-slate-200 cursor-pointer text-center text-xs hover:border-amber-300 transition-colors">
+                                    <input type="radio" name="exportFormat" value="png" class="hidden" />
+                                    <span class="font-bold text-slate-700">PNG</span>
+                                    <span class="text-slate-400 mt-0.5">Rõ nét nhất</span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Độ phân giải -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Độ phân giải:</label>
+                            <div class="flex gap-2">
+                                <label class="exp-scale-label flex-1 flex flex-col items-center p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-center text-xs hover:border-amber-300 transition-colors">
+                                    <input type="radio" name="exportScale" value="1.0" class="hidden" />
+                                    <span class="font-semibold text-slate-700">Thấp</span>
+                                    <span class="text-slate-400">×1</span>
+                                </label>
+                                <label class="exp-scale-label flex-1 flex flex-col items-center p-2.5 rounded-lg border-2 border-amber-500 bg-amber-50/50 cursor-pointer text-center text-xs transition-colors">
+                                    <input type="radio" name="exportScale" value="2.0" class="hidden" checked />
+                                    <span class="font-semibold text-slate-700">Chuẩn</span>
+                                    <span class="text-slate-400">×2</span>
+                                </label>
+                                <label class="exp-scale-label flex-1 flex flex-col items-center p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-center text-xs hover:border-amber-300 transition-colors">
+                                    <input type="radio" name="exportScale" value="3.0" class="hidden" />
+                                    <span class="font-semibold text-slate-700">Cao</span>
+                                    <span class="text-slate-400">×3</span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Chất lượng JPEG -->
+                        <div id="jpegQualityContainer" class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Chất lượng JPEG:</label>
+                            <div class="flex gap-2">
+                                <label class="exp-qual-label flex-1 flex flex-col items-center p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-center text-xs hover:border-amber-300 transition-colors">
+                                    <input type="radio" name="exportQuality" value="0.6" class="hidden" />
+                                    <span class="font-semibold text-slate-700">Nén cao</span>
+                                    <span class="text-slate-400">60%</span>
+                                </label>
+                                <label class="exp-qual-label flex-1 flex flex-col items-center p-2.5 rounded-lg border-2 border-amber-500 bg-amber-50/50 cursor-pointer text-center text-xs transition-colors">
+                                    <input type="radio" name="exportQuality" value="0.85" class="hidden" checked />
+                                    <span class="font-semibold text-slate-700">Chuẩn</span>
+                                    <span class="text-slate-400">85%</span>
+                                </label>
+                                <label class="exp-qual-label flex-1 flex flex-col items-center p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-center text-xs hover:border-amber-300 transition-colors">
+                                    <input type="radio" name="exportQuality" value="0.95" class="hidden" />
+                                    <span class="font-semibold text-slate-700">Cao</span>
+                                    <span class="text-slate-400">95%</span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Chọn trang -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Trang cần xuất:</label>
+                            <div class="flex gap-2">
+                                <label class="exp-pages-label flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 border-amber-500 bg-amber-50/50 cursor-pointer text-sm font-medium text-slate-700 transition-colors">
+                                    <input type="radio" name="exportPages" value="all" class="hidden" checked /> Tất cả
+                                </label>
+                                <label class="exp-pages-label flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-sm font-medium text-slate-700 hover:border-amber-300 transition-colors">
+                                    <input type="radio" name="exportPages" value="custom" class="hidden" /> Chỉ định
+                                </label>
+                            </div>
+                            <div id="exportPagesContainer" class="hidden mt-1">
+                                <input type="text" id="exportPagesInput" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-amber-500 focus:outline-none" placeholder="VD: 1, 3-5, 10" />
+                            </div>
+                        </div>
+                        <p id="exportProgress" class="hidden text-xs text-amber-600 font-medium text-center"></p>
+                        <button id="btnExport" class="w-full mt-2 bg-amber-500 text-white hover:bg-amber-600 inline-flex items-center justify-center font-medium rounded-lg px-5 py-2.5 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Xuất ảnh & Tải ZIP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel: Nén PDF -->
+                <div id="compressPanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg> Nén dung lượng PDF
+                    </h3>
+                    <div class="space-y-4 border-t pt-3">
+                        <p class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            Nén bằng cách chuyển trang thành ảnh nén — giảm dung lượng đáng kể. Phù hợp để gửi email hoặc chia sẻ qua mạng.
+                        </p>
+                        <!-- Mức nén -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-slate-700">Mức độ nén:</label>
+                            <div class="space-y-2">
+                                <label class="compress-level-label flex items-start gap-3 p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-green-300 transition-colors">
+                                    <input type="radio" name="compressLevel" value="light" class="mt-0.5 w-4 h-4 accent-green-600" />
+                                    <div>
+                                        <span class="text-sm font-semibold text-slate-800">Nhẹ — Chất lượng cao</span>
+                                        <p class="text-xs text-slate-500 mt-0.5">Ảnh sắc nét, giảm ~30-50% dung lượng</p>
+                                    </div>
+                                </label>
+                                <label class="compress-level-label flex items-start gap-3 p-3 rounded-xl border-2 border-green-500 bg-green-50/50 cursor-pointer transition-colors">
+                                    <input type="radio" name="compressLevel" value="normal" class="mt-0.5 w-4 h-4 accent-green-600" checked />
+                                    <div>
+                                        <span class="text-sm font-semibold text-slate-800">Chuẩn — Cân bằng ✦ Khuyên dùng</span>
+                                        <p class="text-xs text-slate-500 mt-0.5">Chất lượng tốt, giảm ~60-70% dung lượng</p>
+                                    </div>
+                                </label>
+                                <label class="compress-level-label flex items-start gap-3 p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-green-300 transition-colors">
+                                    <input type="radio" name="compressLevel" value="strong" class="mt-0.5 w-4 h-4 accent-green-600" />
+                                    <div>
+                                        <span class="text-sm font-semibold text-slate-800">Mạnh — File nhỏ nhất</span>
+                                        <p class="text-xs text-slate-500 mt-0.5">File rất nhỏ, ảnh có thể hơi mờ ~80%+</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <p id="compressProgress" class="hidden text-xs text-green-700 font-medium text-center"></p>
+                        <button id="btnCompress" class="w-full mt-2 bg-green-600 text-white hover:bg-green-700 inline-flex items-center justify-center font-medium rounded-lg px-5 py-2.5 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Nén & Tải PDF
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
             <div class="lg:col-span-2">
@@ -509,6 +726,31 @@
                     <p>- <b>Chống sao chép văn bản:</b> Chuyển đổi toàn bộ nội dung PDF thành ảnh nhúng — người xem không thể bôi đen, sao chép hay tìm kiếm văn bản. File trông y hệt bản gốc. Có 3 mức chất lượng ảnh: <em>Nhỏ</em> (file nhẹ), <em>Chuẩn</em> (khuyên dùng), <em>Cao</em> (sắc nét nhất). Lưu ý: file kết quả sẽ lớn hơn bản gốc.</p>
                     <p>- <b>Xóa thông tin ẩn (Metadata):</b> Loại bỏ các thông tin nhúng trong file PDF như tên tác giả, tổ chức, phần mềm tạo file, ngày tạo & chỉnh sửa, tiêu đề tài liệu. Hữu ích khi cần chia sẻ tài liệu mà không muốn lộ danh tính hay nguồn gốc.</p>
                 </div>
+                <div class="space-y-2">
+                    <h3 class="font-bold text-slate-800 text-base">🔢 7. Chế độ Số trang</h3>
+                    <p>Tự động thêm số trang vào mỗi trang PDF với đầy đủ tùy chọn:</p>
+                    <p>- <b>Vị trí:</b> Cuối trang hoặc đầu trang.</p>
+                    <p>- <b>Căn lề:</b> Trái, giữa, hoặc phải.</p>
+                    <p>- <b>Định dạng:</b> Chỉ số (<code>1 2 3</code>), có chữ (<code>Trang 1</code>), hoặc phân số (<code>1/10</code>).</p>
+                    <p>- <b>Bắt đầu từ:</b> Có thể đặt số bắt đầu tùy ý, ví dụ bắt đầu từ 5 nếu tài liệu là phần 2.</p>
+                    <p>- <b>Màu sắc & Cỡ chữ:</b> Chọn màu phù hợp với tài liệu.</p>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-bold text-slate-800 text-base">📷 8. Chế độ Xuất ảnh</h3>
+                    <p>Chuyển từng trang PDF thành file ảnh, tất cả được nén vào 1 file ZIP để tải về.</p>
+                    <p>- <b>Định dạng:</b> <em>JPEG</em> (file nhỏ, phù hợp chia sẻ) hoặc <em>PNG</em> (rõ nét tuyệt đối, nền trong suốt).</p>
+                    <p>- <b>Độ phân giải:</b> ×1 (nhỏ), ×2 (chuẩn — khuyên dùng), ×3 (cực nét, file lớn).</p>
+                    <p>- <b>Chọn trang:</b> Xuất tất cả hoặc chỉ định trang cụ thể (VD: <code>1-3, 5</code>).</p>
+                    <p>Hữu ích khi cần dùng ảnh từ PDF để chèn vào Word, PowerPoint, hoặc đăng lên mạng.</p>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-bold text-slate-800 text-base">🗜️ 9. Chế độ Nén PDF</h3>
+                    <p>Giảm dung lượng file PDF để dễ dàng gửi email, upload lên hệ thống quản lý hoặc chia sẻ qua Zalo/Messenger.</p>
+                    <p>- <b>Nhẹ:</b> Giảm ~30–50%, chất lượng gần như nguyên bản.</p>
+                    <p>- <b>Chuẩn:</b> Giảm ~60–70%, cân bằng tốt giữa chất lượng và dung lượng (khuyên dùng).</p>
+                    <p>- <b>Mạnh:</b> Giảm ~80%+, file rất nhỏ, phù hợp khi chỉ cần đọc, không cần in.</p>
+                    <p>Sau khi nén, công cụ sẽ hiển thị dung lượng trước/sau để bạn thấy kết quả.</p>
+                </div>
                 <div class="mt-6 pt-4 border-t text-center text-xs text-slate-400">
                     Mọi thao tác đều được thực hiện 100% trên máy tính của bạn, không có dữ liệu nào được tải lên máy chủ. An toàn và Bảo mật tuyệt đối.
                 </div>
@@ -534,8 +776,8 @@
             
             imageFiles: [],
             isProcessing: false,
-            wmColor: { r: 0.94, g: 0.27, b: 0.27 }, // Màu mặc định: đỏ
-            vnFontBytes: null // Cache font tiếng Việt
+            wmColor: { r: 0.94, g: 0.27, b: 0.27 }, // Màu mặc định watermark: đỏ
+            pnColor: { r: 0.12, g: 0.16, b: 0.23 } // Màu mặc định số trang: đen xám
         };
 
         const el = {
@@ -599,7 +841,14 @@
             btnWatermark: document.getElementById('btnWatermark'),
             
             protectPanel: document.getElementById('protectPanel'),
-            
+
+            btnModePageNum: document.getElementById('btnModePageNum'),
+            btnModeExport: document.getElementById('btnModeExport'),
+            btnModeCompress: document.getElementById('btnModeCompress'),
+            pagenumPanel: document.getElementById('pagenumPanel'),
+            exportPanel: document.getElementById('exportPanel'),
+            compressPanel: document.getElementById('compressPanel'),
+
             previewPageText: document.getElementById('previewPageText'),
             previewEmpty: document.getElementById('previewEmpty'),
             previewGallery: document.getElementById('previewGallery'),
@@ -648,6 +897,12 @@
             if(el.btnWatermark) el.btnWatermark.disabled = isProcessing;
             if(btnFlattenEl) btnFlattenEl.disabled = isProcessing;
             if(btnCleanMetaEl) btnCleanMetaEl.disabled = isProcessing;
+            const btnPageNumEl   = document.getElementById('btnPageNum');
+            const btnExportEl    = document.getElementById('btnExport');
+            const btnCompressEl  = document.getElementById('btnCompress');
+            if(btnPageNumEl)  btnPageNumEl.disabled = isProcessing;
+            if(btnExportEl)   btnExportEl.disabled  = isProcessing;
+            if(btnCompressEl) btnCompressEl.disabled = isProcessing;
 
             if (isProcessing) {
                 if (state.appMode === 'split' && el.btnSplit) el.btnSplit.innerHTML = loadingHTML;
@@ -680,10 +935,13 @@
             if(el.btnModeEdit) el.btnModeEdit.className = state.appMode === 'edit' ? activeClass : inactiveClass;
             if(el.btnModeWatermark) el.btnModeWatermark.className = state.appMode === 'watermark' ? activeClass : inactiveClass;
             if(el.btnModeProtect) el.btnModeProtect.className = state.appMode === 'protect' ? activeClass : inactiveClass;
+            if(el.btnModePageNum) el.btnModePageNum.className = state.appMode === 'pagenum' ? activeClass : inactiveClass;
+            if(el.btnModeExport) el.btnModeExport.className = state.appMode === 'export' ? activeClass : inactiveClass;
+            if(el.btnModeCompress) el.btnModeCompress.className = state.appMode === 'compress' ? activeClass : inactiveClass;
 
             // Các chế độ cần file PDF mới hiển thị panel tùy chọn
-            const modesRequiringFile = ['split', 'edit', 'watermark', 'protect'];
-            const panels = ['split', 'merge', 'image', 'edit', 'watermark', 'protect'];
+            const modesRequiringFile = ['split', 'edit', 'watermark', 'protect', 'pagenum', 'export', 'compress'];
+            const panels = ['split', 'merge', 'image', 'edit', 'watermark', 'protect', 'pagenum', 'export', 'compress'];
 
             panels.forEach(mode => {
                 const panel = el[mode + 'Panel'];
@@ -1245,24 +1503,24 @@
                 setProcessing(true);
 
                 const PDFDocument = PDFLibObj.PDFDocument;
+                // Tải file PDF từ dữ liệu gốc mà người dùng đã upload
                 const pdfDoc = await PDFDocument.load(state.pdfBytes);
-                const text = (document.getElementById('watermarkTextInput')?.value.trim()) || 'TÀI LIỆU NỘI BỘ';
-                const fontSize = parseInt(document.getElementById('wmSize')?.value || 50);
-                const opacity = parseInt(document.getElementById('wmOpacity')?.value || 25) / 100;
-                const wmStyle = document.querySelector('input[name="wmStyle"]:checked')?.value || 'diagonal';
-                const wmPages = document.querySelector('input[name="wmPages"]:checked')?.value || 'all';
 
-                // Đọc màu từ picker
+                // Lấy nội dung người dùng nhập, nếu để trống dùng mặc định
+                const text = el.watermarkTextInput ? (el.watermarkTextInput.value.trim() || 'TÀI LIỆU NỘI BỘ') : 'TÀI LIỆU NỘI BỘ';
+
+                // Nhúng font chữ mặc định HelveticaBold (không cần tải thêm)
+                const font = await pdfDoc.embedFont(PDFLibObj.StandardFonts.HelveticaBold);
+
+                // Đọc tùy chọn từ giao diện
+                const fontSize = parseInt(document.getElementById('wmSize')?.value || 50);
+                const opacity  = parseInt(document.getElementById('wmOpacity')?.value || 25) / 100;
+                const wmStyle  = document.querySelector('input[name="wmStyle"]:checked')?.value || 'diagonal';
+                const wmPages  = document.querySelector('input[name="wmPages"]:checked')?.value || 'all';
                 let colorR = 0.94, colorG = 0.27, colorB = 0.27;
                 if (state.wmColor) { colorR = state.wmColor.r; colorG = state.wmColor.g; colorB = state.wmColor.b; }
 
-                // Dùng Noto Sans Unicode thay vì Helvetica — hỗ trợ đầy đủ tiếng Việt có dấu
-                if (!state.vnFontBytes) {
-                    // Lần đầu dùng: cần tải font từ mạng (~100KB, chỉ 1 lần)
-                    if(el.btnWatermark) el.btnWatermark.innerHTML = '<span class="loader"></span> Đang tải font...';
-                }
-                const fontBytes = await loadVnFont();
-                const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+                // Lấy toàn bộ trang
                 const allPages = pdfDoc.getPages();
 
                 // Xác định trang cần đóng dấu
@@ -1276,43 +1534,56 @@
                 } else if (wmPages === 'custom') {
                     const customVal = document.getElementById('wmCustomPages')?.value.trim();
                     if (!customVal) throw new Error("Vui lòng nhập số trang cần đóng dấu.");
-                    const parsed = parseRanges(customVal, state.totalPages);
-                    targetIndices = parsed.map(p => p - 1);
+                    targetIndices = parseRanges(customVal, state.totalPages).map(p => p - 1);
                 }
 
+                // Vòng lặp: duyệt qua từng trang để in dấu
                 targetIndices.forEach(idx => {
                     const page = allPages[idx];
+                    // Lấy kích thước trang hiện tại
                     const { width, height } = page.getSize();
-                    const textWidth = font.widthOfTextAtSize(text, fontSize);
+
+                    // Tính toán chiều rộng/cao của text để căn giữa
+                    const textWidth  = font.widthOfTextAtSize(text, fontSize);
                     const textHeight = font.heightAtSize(fontSize);
                     const color = PDFLibObj.rgb(colorR, colorG, colorB);
 
                     if (wmStyle === 'diagonal') {
+                        // Xoay chéo 45° — căn giữa trang
                         page.drawText(text, {
-                            x: (width - textWidth) / 2, y: (height - textHeight) / 2,
-                            size: fontSize, font, color, opacity, rotate: PDFLibObj.degrees(45)
+                            x: (width - textWidth) / 2,
+                            y: (height - textHeight) / 2,
+                            size: fontSize, font, color, opacity,
+                            rotate: PDFLibObj.degrees(45)
                         });
                     } else if (wmStyle === 'center') {
+                        // Nằm ngang — căn giữa trang
                         page.drawText(text, {
-                            x: (width - textWidth) / 2, y: (height - textHeight) / 2,
-                            size: fontSize, font, color, opacity, rotate: PDFLibObj.degrees(0)
+                            x: (width - textWidth) / 2,
+                            y: (height - textHeight) / 2,
+                            size: fontSize, font, color, opacity,
+                            rotate: PDFLibObj.degrees(0)
                         });
                     } else if (wmStyle === 'tiled') {
-                        // Lát gạch: 9 vị trí trên trang (3x3)
-                        const cols = 3, rows = 3;
-                        for (let r = 0; r < rows; r++) {
-                            for (let c = 0; c < cols; c++) {
-                                const x = (width / cols) * c + (width / cols - textWidth) / 2;
-                                const y = (height / rows) * r + (height / rows - textHeight) / 2;
+                        // Lát gạch 3×3 trải đều toàn trang
+                        const tileSize = Math.min(fontSize, 30);
+                        const tileW = font.widthOfTextAtSize(text, tileSize);
+                        const tileH = font.heightAtSize(tileSize);
+                        for (let r = 0; r < 3; r++) {
+                            for (let c = 0; c < 3; c++) {
                                 page.drawText(text, {
-                                    x, y, size: Math.min(fontSize, 30), font, color,
-                                    opacity: opacity * 0.85, rotate: PDFLibObj.degrees(30)
+                                    x: (width / 3) * c + (width / 3 - tileW) / 2,
+                                    y: (height / 3) * r + (height / 3 - tileH) / 2,
+                                    size: tileSize, font, color,
+                                    opacity: opacity * 0.85,
+                                    rotate: PDFLibObj.degrees(30)
                                 });
                             }
                         }
                     }
                 });
 
+                // Lưu và tải xuống
                 const modifiedBytes = await pdfDoc.save();
                 const prefix = state.file.name.replace('.pdf', '_BanQuyen');
                 triggerDownload(new Blob([modifiedBytes], { type: 'application/pdf' }), `${prefix}.pdf`);
@@ -1324,25 +1595,189 @@
             }
         }
 
-        // ---- Tải font hỗ trợ tiếng Việt (Noto Sans) từ CDN, cache lại để dùng nhiều lần ----
-        async function loadVnFont() {
-            if (state.vnFontBytes) return state.vnFontBytes;
-            // Noto Sans Vietnamese — WOFF2, hỗ trợ đầy đủ ký tự có dấu tiếng Việt
-            const urls = [
-                'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5/files/noto-sans-vietnamese-400-normal.woff2',
-                'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans/files/noto-sans-vietnamese-400-normal.woff2'
-            ];
-            let lastErr;
-            for (const url of urls) {
-                try {
-                    const resp = await fetch(url);
-                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                    const buf = await resp.arrayBuffer();
-                    state.vnFontBytes = new Uint8Array(buf);
-                    return state.vnFontBytes;
-                } catch (e) { lastErr = e; }
+        // ---- Thêm số trang tự động ----
+        async function executePageNum() {
+            try {
+                const PDFLibObj = getPDFLib();
+                if (!state.pdfBytes) return;
+                hideMessages();
+                setProcessing(true);
+
+                const PDFDocument = PDFLibObj.PDFDocument;
+                const pdfDoc = await PDFDocument.load(state.pdfBytes);
+
+                const position = document.querySelector('input[name="pnPosition"]:checked')?.value || 'bottom';
+                const align    = document.querySelector('input[name="pnAlign"]:checked')?.value || 'center';
+                const format   = document.getElementById('pnFormat')?.value || '1';
+                const fontSize = parseInt(document.getElementById('pnSize')?.value || 12);
+                const startNum = parseInt(document.getElementById('pnStart')?.value || 1);
+                const margin   = parseInt(document.getElementById('pnMargin')?.value || 18);
+                const color    = state.pnColor || { r: 0.12, g: 0.16, b: 0.23 };
+
+                // Helvetica đủ cho số + ASCII (Trang, dấu /)
+                const font = await pdfDoc.embedFont(PDFLibObj.StandardFonts.Helvetica);
+                const pages = pdfDoc.getPages();
+                const total = pages.length + startNum - 1;
+
+                pages.forEach((page, idx) => {
+                    const { width, height } = page.getSize();
+                    const pageNum = startNum + idx;
+
+                    let label;
+                    if (format === '1')        label = `${pageNum}`;
+                    else if (format === 'trang') label = `Trang ${pageNum}`;
+                    else                         label = `${pageNum}/${total}`;
+
+                    const textWidth = font.widthOfTextAtSize(label, fontSize);
+
+                    let x;
+                    if (align === 'left')       x = margin;
+                    else if (align === 'right')  x = width - textWidth - margin;
+                    else                          x = (width - textWidth) / 2;
+
+                    const y = position === 'top'
+                        ? height - margin - fontSize
+                        : margin;
+
+                    page.drawText(label, {
+                        x, y, size: fontSize, font,
+                        color: PDFLibObj.rgb(color.r, color.g, color.b), opacity: 0.85
+                    });
+                });
+
+                const bytes = await pdfDoc.save();
+                const prefix = state.file.name.replace('.pdf', '_SoTrang');
+                triggerDownload(new Blob([bytes], { type: 'application/pdf' }), `${prefix}.pdf`);
+                showSuccess(`Đã thêm số trang cho ${pages.length} trang. File đang tải xuống.`);
+            } catch (err) {
+                showError('Lỗi thêm số trang: ' + (err.message || 'Không xác định'));
+            } finally {
+                setProcessing(false);
             }
-            throw new Error('Không thể tải font hỗ trợ tiếng Việt. Kiểm tra kết nối mạng và thử lại.');
+        }
+
+        // ---- Xuất PDF thành ảnh ----
+        async function executeExport() {
+            try {
+                const pdfjsObj = typeof pdfjsLib !== 'undefined' ? pdfjsLib : window.pdfjsLib;
+                const JSZipObj = typeof JSZip !== 'undefined' ? JSZip : window.JSZip;
+                if (!state.pdfBytes) return;
+                if (!pdfjsObj) throw new Error('Thư viện PDF chưa tải. Thử lại sau vài giây.');
+                if (!JSZipObj) throw new Error('Thư viện ZIP chưa tải.');
+
+                hideMessages();
+                setProcessing(true);
+
+                const format  = document.querySelector('input[name="exportFormat"]:checked')?.value || 'jpeg';
+                const scale   = parseFloat(document.querySelector('input[name="exportScale"]:checked')?.value || 2.0);
+                const quality = parseFloat(document.querySelector('input[name="exportQuality"]:checked')?.value || 0.85);
+                const pagesMode = document.querySelector('input[name="exportPages"]:checked')?.value || 'all';
+                const progressEl = document.getElementById('exportProgress');
+                if (progressEl) { progressEl.textContent = 'Đang chuẩn bị...'; progressEl.classList.remove('hidden'); }
+
+                const srcDoc = await pdfjsObj.getDocument({ data: state.pdfBytes.slice(0) }).promise;
+                const zip    = new JSZipObj();
+                const prefix = state.file.name.replace('.pdf', '');
+
+                let pageList;
+                if (pagesMode === 'custom') {
+                    const val = document.getElementById('exportPagesInput')?.value.trim();
+                    if (!val) throw new Error('Vui lòng nhập trang cần xuất.');
+                    pageList = parseRanges(val, srcDoc.numPages);
+                } else {
+                    pageList = Array.from({ length: srcDoc.numPages }, (_, i) => i + 1);
+                }
+
+                const ext      = format === 'png' ? 'png' : 'jpg';
+                const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+
+                for (let k = 0; k < pageList.length; k++) {
+                    const pageNum = pageList[k];
+                    if (progressEl) progressEl.textContent = `Đang xuất trang ${pageNum} (${k+1}/${pageList.length})...`;
+
+                    const page     = await srcDoc.getPage(pageNum);
+                    const viewport = page.getViewport({ scale });
+                    const canvas   = document.createElement('canvas');
+                    canvas.width   = Math.floor(viewport.width);
+                    canvas.height  = Math.floor(viewport.height);
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+                    const dataUrl  = canvas.toDataURL(mimeType, format === 'png' ? undefined : quality);
+                    const imgBytes = Uint8Array.from(atob(dataUrl.split(',')[1]), c => c.charCodeAt(0));
+                    zip.file(`${prefix}_trang_${String(pageNum).padStart(3, '0')}.${ext}`, imgBytes);
+                }
+
+                if (progressEl) progressEl.classList.add('hidden');
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                triggerDownload(zipBlob, `${prefix}_images.zip`);
+                showSuccess(`Đã xuất ${pageList.length} ảnh ${ext.toUpperCase()} thành công! File ZIP đang tải.`);
+            } catch (err) {
+                showError('Lỗi xuất ảnh: ' + (err.message || 'Không xác định'));
+                const progressEl = document.getElementById('exportProgress');
+                if (progressEl) progressEl.classList.add('hidden');
+            } finally {
+                setProcessing(false);
+            }
+        }
+
+        // ---- Nén PDF ----
+        async function executeCompress() {
+            try {
+                const PDFLibObj = getPDFLib();
+                const pdfjsObj  = typeof pdfjsLib !== 'undefined' ? pdfjsLib : window.pdfjsLib;
+                if (!state.pdfBytes) return;
+                if (!pdfjsObj) throw new Error('Thư viện PDF chưa tải. Thử lại sau vài giây.');
+
+                hideMessages();
+                setProcessing(true);
+
+                const level = document.querySelector('input[name="compressLevel"]:checked')?.value || 'normal';
+                const progressEl = document.getElementById('compressProgress');
+                if (progressEl) { progressEl.textContent = 'Đang chuẩn bị...'; progressEl.classList.remove('hidden'); }
+
+                // Cấu hình theo mức nén
+                let scale, quality;
+                if      (level === 'light')  { scale = 1.8; quality = 0.88; }
+                else if (level === 'normal') { scale = 1.2; quality = 0.72; }
+                else                          { scale = 1.0; quality = 0.52; }
+
+                const srcDoc = await pdfjsObj.getDocument({ data: state.pdfBytes.slice(0) }).promise;
+                const PDFDocument = PDFLibObj.PDFDocument;
+                const newDoc = await PDFDocument.create();
+
+                for (let i = 1; i <= srcDoc.numPages; i++) {
+                    if (progressEl) progressEl.textContent = `Đang nén trang ${i} / ${srcDoc.numPages}...`;
+                    const page     = await srcDoc.getPage(i);
+                    const viewport = page.getViewport({ scale });
+                    const canvas   = document.createElement('canvas');
+                    canvas.width   = Math.floor(viewport.width);
+                    canvas.height  = Math.floor(viewport.height);
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+                    const dataUrl  = canvas.toDataURL('image/jpeg', quality);
+                    const imgBytes = Uint8Array.from(atob(dataUrl.split(',')[1]), c => c.charCodeAt(0));
+                    const jpgImage = await newDoc.embedJpg(imgBytes);
+                    const origW    = viewport.width / scale;
+                    const origH    = viewport.height / scale;
+                    const newPage  = newDoc.addPage([origW, origH]);
+                    newPage.drawImage(jpgImage, { x: 0, y: 0, width: origW, height: origH });
+                }
+
+                if (progressEl) progressEl.classList.add('hidden');
+                const finalBytes = await newDoc.save();
+                const prefix     = state.file.name.replace('.pdf', '_Nen');
+                triggerDownload(new Blob([finalBytes], { type: 'application/pdf' }), `${prefix}.pdf`);
+
+                const origKB = Math.round(state.pdfBytes.length / 1024);
+                const newKB  = Math.round(finalBytes.length / 1024);
+                showSuccess(`Nén thành công! ${origKB} KB → ${newKB} KB (giảm ${Math.round((1 - newKB/origKB)*100)}%)`);
+            } catch (err) {
+                showError('Lỗi khi nén: ' + (err.message || 'Không xác định'));
+                const progressEl = document.getElementById('compressProgress');
+                if (progressEl) progressEl.classList.add('hidden');
+            } finally {
+                setProcessing(false);
+            }
         }
 
         // ---- Chống sao chép: Flatten PDF sang ảnh ----
@@ -1448,6 +1883,9 @@
         if(el.btnModeEdit) el.btnModeEdit.addEventListener('click', () => { state.appMode = 'edit'; updateModeUI(); });
         if(el.btnModeWatermark) el.btnModeWatermark.addEventListener('click', () => { state.appMode = 'watermark'; updateModeUI(); });
         if(el.btnModeProtect) el.btnModeProtect.addEventListener('click', () => { state.appMode = 'protect'; updateModeUI(); });
+        if(el.btnModePageNum) el.btnModePageNum.addEventListener('click', () => { state.appMode = 'pagenum'; updateModeUI(); });
+        if(el.btnModeExport) el.btnModeExport.addEventListener('click', () => { state.appMode = 'export'; updateModeUI(); });
+        if(el.btnModeCompress) el.btnModeCompress.addEventListener('click', () => { state.appMode = 'compress'; updateModeUI(); });
 
         if(el.btnOpenGuide) el.btnOpenGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.remove('hidden'));
         if(el.btnCloseGuide) el.btnCloseGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.add('hidden'));
@@ -1648,6 +2086,78 @@
         if (btnFlatten) btnFlatten.addEventListener('click', executeFlatten);
         const btnCleanMeta = document.getElementById('btnCleanMeta');
         if (btnCleanMeta) btnCleanMeta.addEventListener('click', executeCleanMeta);
+
+        // === Số trang: màu sắc ===
+        (function() {
+            function setActivePnColor(activeBtn) {
+                document.querySelectorAll('.pn-color-btn').forEach(b => b.style.outline = '');
+                const picker = document.getElementById('pnColorPicker');
+                if (picker) picker.style.outline = '';
+                if (activeBtn) activeBtn.style.outline = '3px solid #0891b2';
+            }
+            document.querySelectorAll('.pn-color-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.pnColor = { r: parseFloat(btn.dataset.r), g: parseFloat(btn.dataset.g), b: parseFloat(btn.dataset.b) };
+                    setActivePnColor(btn);
+                    const hex = `#${Math.round(state.pnColor.r*255).toString(16).padStart(2,'0')}${Math.round(state.pnColor.g*255).toString(16).padStart(2,'0')}${Math.round(state.pnColor.b*255).toString(16).padStart(2,'0')}`;
+                    const picker = document.getElementById('pnColorPicker');
+                    if (picker) picker.value = hex;
+                });
+            });
+            const pnPicker = document.getElementById('pnColorPicker');
+            if (pnPicker) pnPicker.addEventListener('input', e => {
+                state.pnColor = hexToRgb01(e.target.value);
+                setActivePnColor(null);
+                e.target.style.outline = '3px solid #0891b2';
+            });
+            const pnSizeEl = document.getElementById('pnSize');
+            const pnSizeVal = document.getElementById('pnSizeVal');
+            if (pnSizeEl) pnSizeEl.addEventListener('input', e => { if(pnSizeVal) pnSizeVal.textContent = e.target.value; });
+            // Radio styling: position
+            document.querySelectorAll('input[name="pnPosition"]').forEach(r => r.addEventListener('change', () => {
+                document.querySelectorAll('.pn-pos-label').forEach(l => { l.classList.remove('border-cyan-500','bg-cyan-50/50'); l.classList.add('border-slate-200'); });
+                r.closest('label').classList.add('border-cyan-500','bg-cyan-50/50'); r.closest('label').classList.remove('border-slate-200');
+            }));
+            // Radio styling: align
+            document.querySelectorAll('input[name="pnAlign"]').forEach(r => r.addEventListener('change', () => {
+                document.querySelectorAll('.pn-align-label').forEach(l => { l.classList.remove('border-cyan-500','bg-cyan-50/50'); l.classList.add('border-slate-200'); });
+                r.closest('label').classList.add('border-cyan-500','bg-cyan-50/50'); r.closest('label').classList.remove('border-slate-200');
+            }));
+        })();
+        const btnPageNum = document.getElementById('btnPageNum');
+        if (btnPageNum) btnPageNum.addEventListener('click', executePageNum);
+
+        // === Xuất ảnh: radio styling ===
+        (function() {
+            function styleRadioGroup(name, cls, activeClasses, inactiveClasses) {
+                document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.addEventListener('change', () => {
+                    document.querySelectorAll(`.${cls}`).forEach(l => { activeClasses.forEach(c=>l.classList.remove(c)); inactiveClasses.forEach(c=>l.classList.add(c)); });
+                    activeClasses.forEach(c=>r.closest('label').classList.add(c)); inactiveClasses.forEach(c=>r.closest('label').classList.remove(c));
+                }));
+            }
+            styleRadioGroup('exportFormat',  'exp-fmt-label',   ['border-amber-500','bg-amber-50/50'], ['border-slate-200']);
+            styleRadioGroup('exportScale',   'exp-scale-label', ['border-amber-500','bg-amber-50/50'], ['border-slate-200']);
+            styleRadioGroup('exportQuality', 'exp-qual-label',  ['border-amber-500','bg-amber-50/50'], ['border-slate-200']);
+            styleRadioGroup('exportPages',   'exp-pages-label', ['border-amber-500','bg-amber-50/50'], ['border-slate-200']);
+            document.querySelectorAll('input[name="exportFormat"]').forEach(r => r.addEventListener('change', () => {
+                const jpegQ = document.getElementById('jpegQualityContainer');
+                if (jpegQ) jpegQ.classList.toggle('hidden', r.value === 'png');
+            }));
+            document.querySelectorAll('input[name="exportPages"]').forEach(r => r.addEventListener('change', () => {
+                const cont = document.getElementById('exportPagesContainer');
+                if (cont) cont.classList.toggle('hidden', r.value !== 'custom');
+            }));
+        })();
+        const btnExport = document.getElementById('btnExport');
+        if (btnExport) btnExport.addEventListener('click', executeExport);
+
+        // === Nén PDF: radio styling ===
+        document.querySelectorAll('input[name="compressLevel"]').forEach(r => r.addEventListener('change', () => {
+            document.querySelectorAll('.compress-level-label').forEach(l => { l.classList.remove('border-green-500','bg-green-50/50'); l.classList.add('border-slate-200'); });
+            r.closest('label').classList.add('border-green-500','bg-green-50/50'); r.closest('label').classList.remove('border-slate-200');
+        }));
+        const btnCompress = document.getElementById('btnCompress');
+        if (btnCompress) btnCompress.addEventListener('click', executeCompress);
 
         if(el.imageFileInput) {
             el.imageFileInput.addEventListener('change', async (e) => {
