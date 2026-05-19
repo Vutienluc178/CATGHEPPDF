@@ -188,6 +188,11 @@
                     <div class="text-center leading-tight"><div class="text-xs font-bold">PDF→PPT</div><div class="text-[10px] opacity-75">Xuất .pptx</div></div>
                 </button>
 
+                <button id="btnModeExtractImg" data-mode="extractimg" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-teal-600 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><path d="M12 3v4M3 12h4M21 12h-4M12 21v-4"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">Tách ảnh</div><div class="text-[10px] opacity-75">Xuất ZIP</div></div>
+                </button>
+
             </div>
         </div>
         <!-- ===== END MENU ===== -->
@@ -1511,6 +1516,125 @@
                     </button>
                 </div>
 
+                <!-- ===== PANEL: Tách ảnh PDF ===== -->
+                <div id="extractimgPanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        Tách ảnh nhúng trong PDF → ZIP
+                    </h3>
+                    <p class="text-xs text-slate-500 bg-teal-50 border border-teal-100 rounded-lg px-3 py-2">
+                        Trích xuất tất cả ảnh nhúng trong PDF (ảnh gốc, không phải ảnh chụp trang) và đóng gói vào file .zip để tải về.
+                    </p>
+
+                    <!-- CHẾ ĐỘ TÁCH -->
+                    <div class="space-y-2 border-t pt-3">
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Chế độ tách ảnh</p>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-start gap-2.5 p-3 rounded-xl border-2 border-teal-500 bg-teal-50 cursor-pointer">
+                                <input type="radio" name="extractMode" value="embedded" checked class="accent-teal-600 mt-0.5" />
+                                <div>
+                                    <div class="text-xs font-semibold text-teal-800">Ảnh nhúng gốc</div>
+                                    <div class="text-[10px] text-teal-600 mt-0.5">Trích xuất các ảnh được nhúng trực tiếp trong PDF (JPEG, PNG…). Không áp dụng cho PDF dạng scan.</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 p-3 rounded-xl border-2 border-slate-200 hover:border-teal-300 cursor-pointer">
+                                <input type="radio" name="extractMode" value="render" class="accent-teal-600 mt-0.5" />
+                                <div>
+                                    <div class="text-xs font-semibold text-slate-700">Chụp từng trang thành ảnh</div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">Render mỗi trang PDF thành ảnh PNG/JPEG. Dùng khi PDF là bản scan hoặc muốn toàn bộ nội dung trang.</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- LỌC ẢNH NHỎ (chỉ hiện khi embedded) -->
+                    <div id="extractEmbeddedOpts" class="space-y-3 border-t pt-3">
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Lọc ảnh nhỏ</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs font-medium text-slate-600">Rộng tối thiểu (px):</label>
+                                <input type="number" id="extractMinW" value="30" min="1" max="9999"
+                                    class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-teal-500 focus:outline-none" />
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-medium text-slate-600">Cao tối thiểu (px):</label>
+                                <input type="number" id="extractMinH" value="30" min="1" max="9999"
+                                    class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-teal-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-400">Ảnh nhỏ hơn kích thước trên sẽ bị bỏ qua (loại bỏ icon, nền trang trí…)</p>
+                    </div>
+
+                    <!-- CHẤT LƯỢNG RENDER (chỉ hiện khi render) -->
+                    <div id="extractRenderOpts" class="hidden space-y-3 border-t pt-3">
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Chất lượng chụp trang</p>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-600">Độ phân giải:</label>
+                            <select id="extractRenderScale" class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-teal-500 focus:outline-none">
+                                <option value="1">Nhanh (96dpi)</option>
+                                <option value="1.5" selected>Cân bằng (144dpi)</option>
+                                <option value="2">Cao (192dpi)</option>
+                                <option value="3">Rất cao (288dpi)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ĐỊNH DẠNG OUTPUT -->
+                    <div class="space-y-3 border-t pt-3">
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Định dạng ảnh xuất</p>
+                        <div class="flex gap-3">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="extractFmt" value="png" checked class="accent-teal-500" />
+                                <span class="text-xs text-slate-700">PNG (không mất dữ liệu)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="extractFmt" value="jpeg" class="accent-teal-500" />
+                                <span class="text-xs text-slate-700">JPEG (nhỏ hơn)</span>
+                            </label>
+                        </div>
+                        <div id="extractJpegQWrap" class="hidden space-y-1">
+                            <label class="block text-xs font-medium text-slate-600">Chất lượng JPEG: <span id="extractJpegQVal" class="text-teal-600 font-bold">90</span>%</label>
+                            <input type="range" id="extractJpegQ" min="60" max="100" value="90" class="w-full accent-teal-500" />
+                        </div>
+                    </div>
+
+                    <!-- PHẠM VI TRANG -->
+                    <div class="space-y-2 border-t pt-3">
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Phạm vi trang</p>
+                        <div class="flex gap-3">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="extractRange" value="all" checked class="accent-teal-500" />
+                                <span class="text-xs text-slate-700">Tất cả trang</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="extractRange" value="custom" class="accent-teal-500" />
+                                <span class="text-xs text-slate-700">Chỉ định trang</span>
+                            </label>
+                        </div>
+                        <input type="text" id="extractCustomPages" class="hidden w-full rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-teal-500 focus:outline-none" placeholder="VD: 1-3, 5, 8-10" />
+                    </div>
+
+                    <!-- THÔNG TIN -->
+                    <div id="extractInfoBox" class="hidden p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed"></div>
+
+                    <!-- PROGRESS -->
+                    <div id="extractProgressWrap" class="hidden space-y-1">
+                        <div class="flex justify-between text-xs text-slate-500">
+                            <span id="extractProgressLabel">Đang xử lý…</span>
+                            <span id="extractProgressPct">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div id="extractProgressBar" class="h-2 rounded-full bg-teal-500 transition-all duration-300" style="width:0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- BUTTON -->
+                    <button id="btnExtractImg" class="w-full bg-teal-600 text-white hover:bg-teal-700 inline-flex items-center justify-center font-semibold rounded-xl px-4 py-3 text-sm transition-colors disabled:opacity-50 shadow-md gap-2">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Tách & Tải ZIP ảnh
+                    </button>
+                </div>
+
             </div>
 
             <div class="lg:col-span-2">
@@ -1716,6 +1840,7 @@
             btnModeEbook: document.getElementById('btnModeEbook'),
             btnModePrint: document.getElementById('btnModePrint'),
             btnModePptx: document.getElementById('btnModePptx'),
+            btnModeExtractImg: document.getElementById('btnModeExtractImg'),
             pagenumPanel: document.getElementById('pagenumPanel'),
             exportPanel: document.getElementById('exportPanel'),
             compressPanel: document.getElementById('compressPanel'),
@@ -1726,6 +1851,7 @@
             ebookPanel: document.getElementById('ebookPanel'),
             printPanel: document.getElementById('printPanel'),
             pptxPanel: document.getElementById('pptxPanel'),
+            extractimgPanel: document.getElementById('extractimgPanel'),
 
             previewPageText: document.getElementById('previewPageText'),
             previewEmpty: document.getElementById('previewEmpty'),
@@ -1819,8 +1945,8 @@
                 btn.style.boxShadow  = isActive ? '0 8px 24px rgba(0,0,0,0.28)' : '';
             });
 
-            const modesRequiringFile = ['split','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext','word','print','pptx'];
-            const panels = ['split','merge','image','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext','word','ebook','print','pptx'];
+            const modesRequiringFile = ['split','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext','word','print','pptx','extractimg'];
+            const panels = ['split','merge','image','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext','word','ebook','print','pptx','extractimg'];
 
             panels.forEach(mode => {
                 const panel = el[mode + 'Panel'];
@@ -3976,7 +4102,8 @@
         if(el.btnModeWord)  el.btnModeWord.addEventListener('click',  () => { state.appMode = 'word';  updateModeUI(); });
         if(el.btnModeEbook)  el.btnModeEbook.addEventListener('click',  () => { state.appMode = 'ebook';  updateModeUI(); });
         if(el.btnModePrint)  el.btnModePrint.addEventListener('click',  () => { state.appMode = 'print';  updateModeUI(); });
-        if(el.btnModePptx)   el.btnModePptx.addEventListener('click',   () => { state.appMode = 'pptx';   updateModeUI(); });
+        if(el.btnModePptx)       el.btnModePptx.addEventListener('click',       () => { state.appMode = 'pptx';       updateModeUI(); });
+        if(el.btnModeExtractImg) el.btnModeExtractImg.addEventListener('click', () => { state.appMode = 'extractimg'; updateModeUI(); });
 
         if(el.btnOpenGuide) el.btnOpenGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.remove('hidden'));
         if(el.btnCloseGuide) el.btnCloseGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.add('hidden'));
@@ -4956,6 +5083,348 @@
                 setProcessing(false);
             }
         }
+
+        // ============================================================
+        // TÁCH ẢNH NHÚNG TRONG PDF → ZIP
+        // ============================================================
+
+        /**
+         * Convert PDF.js image data (various color spaces) to RGBA Uint8ClampedArray
+         */
+        function pdfImgToRGBA(imgData) {
+            const { data, width, height, kind } = imgData;
+            if (!data || !width || !height) return null;
+            const total = width * height;
+            const rgba  = new Uint8ClampedArray(total * 4);
+
+            // kind: 1=GRAYSCALE_1BPP, 2=RGB_24BPP, 3=RGBA_32BPP
+            const k = kind || (data.length === total * 4 ? 3 : data.length === total * 3 ? 2 : data.length === total ? 8 : 0);
+
+            if (k === 3 || data.length === total * 4) {
+                // RGBA – direct copy
+                for (let i = 0; i < total * 4; i++) rgba[i] = data[i];
+            } else if (k === 2 || data.length === total * 3) {
+                // RGB_24
+                for (let i = 0; i < total; i++) {
+                    rgba[i*4]   = data[i*3];
+                    rgba[i*4+1] = data[i*3+1];
+                    rgba[i*4+2] = data[i*3+2];
+                    rgba[i*4+3] = 255;
+                }
+            } else if (k === 1) {
+                // GRAYSCALE_1BPP packed bits
+                const bytesPerRow = (width + 7) >> 3;
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const b   = data[y * bytesPerRow + (x >> 3)];
+                        const bit = (b >> (7 - (x & 7))) & 1;
+                        const v   = bit ? 255 : 0;
+                        const p   = (y * width + x) * 4;
+                        rgba[p] = rgba[p+1] = rgba[p+2] = v; rgba[p+3] = 255;
+                    }
+                }
+            } else if (data.length === total) {
+                // Grayscale 8-bit
+                for (let i = 0; i < total; i++) {
+                    rgba[i*4] = rgba[i*4+1] = rgba[i*4+2] = data[i]; rgba[i*4+3] = 255;
+                }
+            } else {
+                return null;
+            }
+            return rgba;
+        }
+
+        /**
+         * Draw imgData onto a canvas and return base64 string
+         */
+        function imgDataToBase64(imgData, fmt, jpegQ) {
+            const rgba = pdfImgToRGBA(imgData);
+            if (!rgba) return null;
+            const cv = document.createElement('canvas');
+            cv.width  = imgData.width;
+            cv.height = imgData.height;
+            const ctx = cv.getContext('2d');
+            ctx.putImageData(new ImageData(rgba, imgData.width, imgData.height), 0, 0);
+            const mime = fmt === 'jpeg' ? 'image/jpeg' : 'image/png';
+            const dataUrl = cv.toDataURL(mime, fmt === 'jpeg' ? jpegQ : undefined);
+            return dataUrl.split(',')[1];
+        }
+
+        /**
+         * Get image object from PDF.js objs (callback-based, wrapped as promise)
+         */
+        function getImgObjPromise(objs, id) {
+            return new Promise((resolve) => {
+                try {
+                    objs.get(id, (d) => resolve(d));
+                } catch (e) {
+                    resolve(null);
+                }
+            });
+        }
+
+        /**
+         * Extract embedded images from a single PDF.js page.
+         * Returns array of imgData objects (already filtered by minW/minH).
+         */
+        async function extractPageEmbeddedImages(page, minW, minH, seenGlobalIds) {
+            const opList = await page.getOperatorList();
+            const OPS    = pdfjsLib.OPS;
+
+            // Collect image XObject IDs referenced on this page
+            const pageImgIds   = new Set();
+            const globalImgIds = new Set();
+
+            for (let i = 0; i < opList.fnArray.length; i++) {
+                const fn = opList.fnArray[i];
+                if (fn === OPS.paintImageXObject   ||
+                    fn === OPS.paintJpegXObject     ||
+                    fn === OPS.paintImageMaskXObject) {
+                    const id = opList.argsArray[i][0];
+                    if (typeof id !== 'string') continue;
+                    // Global objects have IDs starting with 'g_'
+                    if (id.startsWith('g_')) {
+                        if (!seenGlobalIds.has(id)) globalImgIds.add(id);
+                    } else {
+                        pageImgIds.add(id);
+                    }
+                }
+            }
+
+            // Mark global ids as seen to avoid duplicates across pages
+            for (const id of globalImgIds) seenGlobalIds.add(id);
+
+            const images = [];
+
+            // Resolve page-level images
+            for (const id of pageImgIds) {
+                const img = await getImgObjPromise(page.objs, id);
+                if (img && img.width >= minW && img.height >= minH && img.data) {
+                    images.push(img);
+                }
+            }
+
+            // Resolve global images
+            for (const id of globalImgIds) {
+                const img = await getImgObjPromise(page.commonObjs, id);
+                if (img && img.width >= minW && img.height >= minH && img.data) {
+                    images.push(img);
+                }
+            }
+
+            return images;
+        }
+
+        /**
+         * Render a full PDF page to canvas and return base64 (for "render mode")
+         */
+        async function renderPageToBase64(page, scale, fmt, jpegQ) {
+            const vp = page.getViewport({ scale });
+            const cv = document.createElement('canvas');
+            cv.width  = Math.round(vp.width);
+            cv.height = Math.round(vp.height);
+            const ctx = cv.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, cv.width, cv.height);
+            await page.render({ canvasContext: ctx, viewport: vp }).promise;
+            const mime = fmt === 'jpeg' ? 'image/jpeg' : 'image/png';
+            const dataUrl = cv.toDataURL(mime, fmt === 'jpeg' ? jpegQ : undefined);
+            return dataUrl.split(',')[1];
+        }
+
+        /**
+         * Parse page range string → 0-based indices
+         */
+        function parseExtractPageRange(rangeStr, total) {
+            const indices = new Set();
+            rangeStr.split(',').forEach(part => {
+                const m = part.trim().match(/^(\d+)(?:-(\d+))?$/);
+                if (!m) return;
+                const from = parseInt(m[1], 10);
+                const to   = m[2] ? parseInt(m[2], 10) : from;
+                for (let i = from; i <= to; i++) {
+                    if (i >= 1 && i <= total) indices.add(i - 1);
+                }
+            });
+            return Array.from(indices).sort((a, b) => a - b);
+        }
+
+        // Main extraction function
+        async function executeExtractImages() {
+            if (!state.pdfBytes) { showError('Vui lòng chọn file PDF trước.'); return; }
+
+            // --- Read UI ---
+            const mode     = document.querySelector('input[name="extractMode"]:checked')?.value || 'embedded';
+            const fmt      = document.querySelector('input[name="extractFmt"]:checked')?.value   || 'png';
+            const jpegQ    = parseInt(document.getElementById('extractJpegQ')?.value || '90', 10) / 100;
+            const minW     = parseInt(document.getElementById('extractMinW')?.value  || '30', 10);
+            const minH     = parseInt(document.getElementById('extractMinH')?.value  || '30', 10);
+            const scale    = parseFloat(document.getElementById('extractRenderScale')?.value || '1.5');
+            const rangeVal = document.querySelector('input[name="extractRange"]:checked')?.value || 'all';
+            const customTxt= document.getElementById('extractCustomPages')?.value || '';
+            const ext      = fmt === 'jpeg' ? 'jpg' : 'png';
+
+            // --- UI refs ---
+            const infoBox     = document.getElementById('extractInfoBox');
+            const progWrap    = document.getElementById('extractProgressWrap');
+            const progBar     = document.getElementById('extractProgressBar');
+            const progPct     = document.getElementById('extractProgressPct');
+            const progLbl     = document.getElementById('extractProgressLabel');
+            const btnExtract  = document.getElementById('btnExtractImg');
+
+            const showProg = (pct, label) => {
+                if (progBar) progBar.style.width = pct + '%';
+                if (progPct) progPct.textContent = pct + '%';
+                if (progLbl) progLbl.textContent = label;
+            };
+
+            if (progWrap) progWrap.classList.remove('hidden');
+            if (infoBox)  { infoBox.classList.remove('hidden'); infoBox.textContent = 'Đang khởi tạo…'; }
+            if (btnExtract) btnExtract.disabled = true;
+            setProcessing(true);
+            hideMessages();
+
+            try {
+                const pdfJs = await pdfjsLib.getDocument({ data: state.pdfBytes.slice() }).promise;
+                const total = pdfJs.numPages;
+
+                // Resolve page indices
+                let pageIndices;
+                if (rangeVal === 'all') {
+                    pageIndices = Array.from({ length: total }, (_, i) => i);
+                } else {
+                    pageIndices = parseExtractPageRange(customTxt, total);
+                    if (!pageIndices.length) { showError('Phạm vi trang không hợp lệ.'); return; }
+                }
+
+                const zip          = new JSZip();
+                const imgFolder    = zip.folder('images');
+                let totalImgs      = 0;
+                const seenGlobalIds = new Set();
+
+                if (mode === 'embedded') {
+                    // ── MODE 1: Extract embedded image XObjects ──
+                    if (infoBox) infoBox.textContent = `Đang quét ${pageIndices.length} trang để tìm ảnh nhúng…`;
+
+                    for (let idx = 0; idx < pageIndices.length; idx++) {
+                        const pageNum = pageIndices[idx] + 1;
+                        showProg(Math.round(idx / pageIndices.length * 90), `Trang ${pageNum}/${total}…`);
+
+                        const page   = await pdfJs.getPage(pageNum);
+                        const images = await extractPageEmbeddedImages(page, minW, minH, seenGlobalIds);
+
+                        for (const imgData of images) {
+                            const b64 = imgDataToBase64(imgData, fmt, jpegQ);
+                            if (!b64) continue;
+                            totalImgs++;
+                            imgFolder.file(`p${String(pageNum).padStart(3,'0')}_img${totalImgs}.${ext}`, b64, { base64: true });
+                        }
+                    }
+                } else {
+                    // ── MODE 2: Render each page to image ──
+                    if (infoBox) infoBox.textContent = `Đang chụp ${pageIndices.length} trang…`;
+
+                    for (let idx = 0; idx < pageIndices.length; idx++) {
+                        const pageNum = pageIndices[idx] + 1;
+                        showProg(Math.round(idx / pageIndices.length * 90), `Đang render trang ${pageNum}/${total}…`);
+
+                        const page = await pdfJs.getPage(pageNum);
+                        const b64  = await renderPageToBase64(page, scale, fmt, jpegQ);
+                        if (!b64) continue;
+                        totalImgs++;
+                        imgFolder.file(`page_${String(pageNum).padStart(3,'0')}.${ext}`, b64, { base64: true });
+                    }
+                }
+
+                showProg(95, 'Đang đóng gói ZIP…');
+
+                if (totalImgs === 0) {
+                    showError(mode === 'embedded'
+                        ? 'Không tìm thấy ảnh nhúng nào trong PDF. Thử chế độ "Chụp từng trang" hoặc giảm kích thước lọc tối thiểu.'
+                        : 'Không có trang nào để xuất.');
+                    return;
+                }
+
+                const blob = await zip.generateAsync({
+                    type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 5 }
+                });
+
+                showProg(100, 'Hoàn thành!');
+
+                const url = URL.createObjectURL(blob);
+                const a   = document.createElement('a');
+                a.href    = url;
+                const base = (state.file?.name || 'output').replace(/\.pdf$/i, '');
+                a.download = `${base}_images.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+                const modeLabel = mode === 'embedded' ? 'ảnh nhúng' : 'ảnh trang';
+                showSuccess(`Đã tách ${totalImgs} ${modeLabel} thành công!`);
+                if (infoBox) {
+                    infoBox.textContent = `✅ Tìm thấy và xuất ${totalImgs} ${modeLabel} (${fmt.toUpperCase()}) từ ${pageIndices.length} trang.`;
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError('Lỗi khi tách ảnh: ' + err.message);
+            } finally {
+                if (btnExtract) btnExtract.disabled = false;
+                setProcessing(false);
+            }
+        }
+
+        // ── Extract-image panel event listeners ──
+
+        // Mode switch: embedded ↔ render
+        document.querySelectorAll('input[name="extractMode"]').forEach(r => {
+            r.addEventListener('change', function () {
+                const isEmbedded = this.value === 'embedded';
+                // Update radio label styling
+                document.querySelectorAll('input[name="extractMode"]').forEach(rb => {
+                    const lbl = rb.closest('label');
+                    if (!lbl) return;
+                    if (rb.checked) {
+                        lbl.classList.add('border-teal-500', 'bg-teal-50');
+                        lbl.classList.remove('border-slate-200');
+                    } else {
+                        lbl.classList.remove('border-teal-500', 'bg-teal-50');
+                        lbl.classList.add('border-slate-200');
+                    }
+                });
+                const embOpts  = document.getElementById('extractEmbeddedOpts');
+                const rendOpts = document.getElementById('extractRenderOpts');
+                if (embOpts)  embOpts.classList.toggle('hidden', !isEmbedded);
+                if (rendOpts) rendOpts.classList.toggle('hidden',  isEmbedded);
+            });
+        });
+
+        // Format: show/hide JPEG quality slider
+        document.querySelectorAll('input[name="extractFmt"]').forEach(r => {
+            r.addEventListener('change', function () {
+                const wrap = document.getElementById('extractJpegQWrap');
+                if (wrap) wrap.classList.toggle('hidden', this.value !== 'jpeg');
+            });
+        });
+
+        // JPEG quality slider value display
+        document.getElementById('extractJpegQ')?.addEventListener('input', function () {
+            const el2 = document.getElementById('extractJpegQVal');
+            if (el2) el2.textContent = this.value;
+        });
+
+        // Page range: show/hide custom input
+        document.querySelectorAll('input[name="extractRange"]').forEach(r => {
+            r.addEventListener('change', function () {
+                const inp = document.getElementById('extractCustomPages');
+                if (inp) inp.classList.toggle('hidden', this.value !== 'custom');
+            });
+        });
+
+        // Extract button
+        document.getElementById('btnExtractImg')?.addEventListener('click', executeExtractImages);
 
         // ── PPTX Panel event listeners ──
 
