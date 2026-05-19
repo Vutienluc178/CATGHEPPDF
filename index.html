@@ -193,6 +193,11 @@
                     <div class="text-center leading-tight"><div class="text-xs font-bold">Tách ảnh</div><div class="text-[10px] opacity-75">Xuất ZIP</div></div>
                 </button>
 
+                <button id="btnModeMdPdf" data-mode="mdpdf" class="mode-card flex flex-col items-center gap-2 p-3 rounded-2xl bg-violet-600 text-white shadow-md hover:brightness-110 transition-all duration-200">
+                    <div class="p-2 bg-white/20 rounded-xl"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/><polyline points="9 8 10 8 11 8"/></svg></div>
+                    <div class="text-center leading-tight"><div class="text-xs font-bold">MD→PDF</div><div class="text-[10px] opacity-75">Từ AI</div></div>
+                </button>
+
             </div>
         </div>
         <!-- ===== END MENU ===== -->
@@ -1635,6 +1640,165 @@
                     </button>
                 </div>
 
+                <!-- ===== PANEL: Markdown → PDF ===== -->
+                <div id="mdpdfPanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Markdown → PDF (Chuẩn đọc điện thoại)
+                    </h3>
+                    <p class="text-xs text-slate-500 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2 leading-relaxed">
+                        Dán nội dung Markdown từ AI vào ô bên dưới. Hỗ trợ: <code class="bg-violet-100 px-1 rounded">**đậm**</code>, <code class="bg-violet-100 px-1 rounded">*nghiêng*</code>, <code class="bg-violet-100 px-1 rounded">### Tiêu đề</code>, <code class="bg-violet-100 px-1 rounded">* Danh sách</code>, blockquote, <code class="bg-violet-100 px-1 rounded">---</code>...
+                    </p>
+
+                    <!-- TEXTAREA -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wide">Nội dung Markdown</label>
+                            <div class="flex gap-2 items-center">
+                                <span id="mdCharCount" class="text-[10px] text-slate-400">0 ký tự</span>
+                                <button id="btnMdClear" class="text-[10px] text-red-400 hover:text-red-600 font-medium border border-red-200 hover:border-red-400 rounded px-1.5 py-0.5 transition-colors">Xóa</button>
+                            </div>
+                        </div>
+                        <textarea id="mdInput" rows="11"
+                            class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:border-violet-500 focus:outline-none resize-y font-mono leading-relaxed bg-slate-50 placeholder-slate-400"
+                            placeholder="### Tiêu đề bài viết&#10;&#10;Đây là đoạn văn bình thường với **chữ đậm** và *chữ nghiêng*.&#10;&#10;* Mục danh sách 1&#10;* **Từ khóa:** Nội dung giải thích chi tiết...&#10;&#10;---&#10;&#10;**Kết luận:** Dán nội dung AI vào đây và nhấn Xuất PDF."></textarea>
+                    </div>
+
+                    <!-- CHỦ ĐỀ MÀU SẮC -->
+                    <div class="space-y-2 border-t pt-3">
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Chủ đề màu sắc</p>
+                        <div class="grid grid-cols-3 gap-2">
+
+                            <!-- Light -->
+                            <button type="button" class="md-theme-btn md-theme-active flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 border-violet-500 bg-violet-50 transition-all" data-theme="light">
+                                <div class="w-full h-8 rounded-lg bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-center px-2 gap-0.5">
+                                    <div class="w-4/5 h-1 rounded-full bg-slate-800"></div>
+                                    <div class="w-3/5 h-0.5 rounded-full bg-slate-400"></div>
+                                    <div class="w-4/5 h-0.5 rounded-full bg-slate-300"></div>
+                                </div>
+                                <span class="text-[10px] font-bold text-violet-700">☀️ Sáng</span>
+                            </button>
+
+                            <!-- Sepia -->
+                            <button type="button" class="md-theme-btn flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 border-slate-200 hover:border-violet-300 transition-all" data-theme="sepia">
+                                <div class="w-full h-8 rounded-lg border border-amber-100 shadow-sm overflow-hidden flex flex-col justify-center px-2 gap-0.5" style="background:#faf6ef">
+                                    <div class="w-4/5 h-1 rounded-full" style="background:#2d1b0e"></div>
+                                    <div class="w-3/5 h-0.5 rounded-full" style="background:#6b3f1f"></div>
+                                    <div class="w-4/5 h-0.5 rounded-full" style="background:#92400e; opacity:.5"></div>
+                                </div>
+                                <span class="text-[10px] font-semibold text-slate-600">📜 Sepia</span>
+                            </button>
+
+                            <!-- Dark -->
+                            <button type="button" class="md-theme-btn flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 border-slate-200 hover:border-violet-300 transition-all" data-theme="dark">
+                                <div class="w-full h-8 rounded-lg border border-slate-700 shadow-sm overflow-hidden flex flex-col justify-center px-2 gap-0.5" style="background:#1e293b">
+                                    <div class="w-4/5 h-1 rounded-full" style="background:#f1f5f9"></div>
+                                    <div class="w-3/5 h-0.5 rounded-full" style="background:#93c5fd"></div>
+                                    <div class="w-4/5 h-0.5 rounded-full" style="background:#60a5fa; opacity:.6"></div>
+                                </div>
+                                <span class="text-[10px] font-semibold text-slate-600">🌙 Tối</span>
+                            </button>
+
+                            <!-- Ocean -->
+                            <button type="button" class="md-theme-btn flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 border-slate-200 hover:border-violet-300 transition-all" data-theme="ocean">
+                                <div class="w-full h-8 rounded-lg border border-sky-100 shadow-sm overflow-hidden flex flex-col justify-center px-2 gap-0.5" style="background:#f0f9ff">
+                                    <div class="w-4/5 h-1 rounded-full" style="background:#0c4a6e"></div>
+                                    <div class="w-3/5 h-0.5 rounded-full" style="background:#0369a1"></div>
+                                    <div class="w-4/5 h-0.5 rounded-full" style="background:#0891b2; opacity:.6"></div>
+                                </div>
+                                <span class="text-[10px] font-semibold text-slate-600">🌊 Biển</span>
+                            </button>
+
+                            <!-- Forest -->
+                            <button type="button" class="md-theme-btn flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 border-slate-200 hover:border-violet-300 transition-all" data-theme="forest">
+                                <div class="w-full h-8 rounded-lg border border-green-100 shadow-sm overflow-hidden flex flex-col justify-center px-2 gap-0.5" style="background:#f7fdf4">
+                                    <div class="w-4/5 h-1 rounded-full" style="background:#14532d"></div>
+                                    <div class="w-3/5 h-0.5 rounded-full" style="background:#166534"></div>
+                                    <div class="w-4/5 h-0.5 rounded-full" style="background:#15803d; opacity:.6"></div>
+                                </div>
+                                <span class="text-[10px] font-semibold text-slate-600">🌿 Rừng</span>
+                            </button>
+
+                            <!-- Night (GitHub dark) -->
+                            <button type="button" class="md-theme-btn flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 border-slate-200 hover:border-violet-300 transition-all" data-theme="night">
+                                <div class="w-full h-8 rounded-lg border border-slate-900 shadow-sm overflow-hidden flex flex-col justify-center px-2 gap-0.5" style="background:#0d1117">
+                                    <div class="w-4/5 h-1 rounded-full" style="background:#f0f6ff"></div>
+                                    <div class="w-3/5 h-0.5 rounded-full" style="background:#79c0ff"></div>
+                                    <div class="w-4/5 h-0.5 rounded-full" style="background:#58a6ff; opacity:.7"></div>
+                                </div>
+                                <span class="text-[10px] font-semibold text-slate-600">🔭 Đêm</span>
+                            </button>
+
+                        </div>
+                    </div>
+
+                    <!-- TÙY CHỈNH -->
+                    <div class="space-y-3 border-t pt-3">
+                        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Tùy chỉnh hiển thị</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Cỡ chữ:</label>
+                                <select id="mdFontSize" class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-violet-500 focus:outline-none">
+                                    <option value="13">Nhỏ (13px)</option>
+                                    <option value="15" selected>Vừa (15px) ✓</option>
+                                    <option value="17">Lớn (17px)</option>
+                                    <option value="19">Rất lớn (19px)</option>
+                                    <option value="21">To (21px)</option>
+                                    <option value="24">Rất to (24px)</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Giãn dòng:</label>
+                                <select id="mdLineSpacing" class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-violet-500 focus:outline-none">
+                                    <option value="1.4">Hẹp (1.4)</option>
+                                    <option value="1.6" selected>Chuẩn (1.6) ✓</option>
+                                    <option value="1.8">Rộng (1.8)</option>
+                                    <option value="2.0">Rất rộng (2.0)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Độ phân giải:</label>
+                                <select id="mdQuality" class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-violet-500 focus:outline-none">
+                                    <option value="1">Nhanh (96dpi)</option>
+                                    <option value="1.5">Tốt (144dpi)</option>
+                                    <option value="2" selected>Cao (192dpi) ✓</option>
+                                    <option value="3">Rất cao (288dpi)</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-medium text-slate-600">Lề trang:</label>
+                                <select id="mdMargin" class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-violet-500 focus:outline-none">
+                                    <option value="40">Hẹp (40px)</option>
+                                    <option value="55" selected>Vừa (55px) ✓</option>
+                                    <option value="70">Rộng (70px)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- THÔNG TIN -->
+                    <div id="mdInfoBox" class="hidden p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed"></div>
+
+                    <!-- PROGRESS -->
+                    <div id="mdProgressWrap" class="hidden space-y-1">
+                        <div class="flex justify-between text-xs text-slate-500">
+                            <span id="mdProgressLabel">Đang xử lý…</span>
+                            <span id="mdProgressPct">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div id="mdProgressBar" class="h-2 rounded-full bg-violet-500 transition-all duration-300" style="width:0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- BUTTON -->
+                    <button id="btnMdExport" class="w-full bg-violet-600 text-white hover:bg-violet-700 inline-flex items-center justify-center font-semibold rounded-xl px-4 py-3 text-sm transition-colors disabled:opacity-50 shadow-md gap-2">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Xuất PDF (Chuẩn điện thoại)
+                    </button>
+                </div>
+
             </div>
 
             <div class="lg:col-span-2">
@@ -1841,6 +2005,7 @@
             btnModePrint: document.getElementById('btnModePrint'),
             btnModePptx: document.getElementById('btnModePptx'),
             btnModeExtractImg: document.getElementById('btnModeExtractImg'),
+            btnModeMdPdf: document.getElementById('btnModeMdPdf'),
             pagenumPanel: document.getElementById('pagenumPanel'),
             exportPanel: document.getElementById('exportPanel'),
             compressPanel: document.getElementById('compressPanel'),
@@ -1852,6 +2017,7 @@
             printPanel: document.getElementById('printPanel'),
             pptxPanel: document.getElementById('pptxPanel'),
             extractimgPanel: document.getElementById('extractimgPanel'),
+            mdpdfPanel: document.getElementById('mdpdfPanel'),
 
             previewPageText: document.getElementById('previewPageText'),
             previewEmpty: document.getElementById('previewEmpty'),
@@ -1946,7 +2112,7 @@
             });
 
             const modesRequiringFile = ['split','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext','word','print','pptx','extractimg'];
-            const panels = ['split','merge','image','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext','word','ebook','print','pptx','extractimg'];
+            const panels = ['split','merge','image','edit','watermark','protect','pagenum','export','compress','signature','insertimg','inserttext','word','ebook','print','pptx','extractimg','mdpdf'];
 
             panels.forEach(mode => {
                 const panel = el[mode + 'Panel'];
@@ -1962,7 +2128,7 @@
             });
 
             // Dropzone & upload label
-            if (state.appMode === 'image' || state.appMode === 'ebook') {
+            if (state.appMode === 'image' || state.appMode === 'ebook' || state.appMode === 'mdpdf') {
                 if(el.dropzone) el.dropzone.classList.add('hidden');
             } else {
                 if(el.dropzone) el.dropzone.classList.remove('hidden');
@@ -4104,6 +4270,7 @@
         if(el.btnModePrint)  el.btnModePrint.addEventListener('click',  () => { state.appMode = 'print';  updateModeUI(); });
         if(el.btnModePptx)       el.btnModePptx.addEventListener('click',       () => { state.appMode = 'pptx';       updateModeUI(); });
         if(el.btnModeExtractImg) el.btnModeExtractImg.addEventListener('click', () => { state.appMode = 'extractimg'; updateModeUI(); });
+        if(el.btnModeMdPdf)      el.btnModeMdPdf.addEventListener('click',      () => { state.appMode = 'mdpdf';      updateModeUI(); });
 
         if(el.btnOpenGuide) el.btnOpenGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.remove('hidden'));
         if(el.btnCloseGuide) el.btnCloseGuide.addEventListener('click', () => el.guideModal && el.guideModal.classList.add('hidden'));
@@ -5375,6 +5542,409 @@
                 setProcessing(false);
             }
         }
+
+        // ============================================================
+        // MARKDOWN → PDF (Mobile-optimized, Vietnamese support)
+        // ============================================================
+
+        const MD_THEMES = {
+            light:  { bg:'#ffffff', text:'#1e293b', h1:'#0f172a',  h2:'#1e3a5f', h3:'#1d4ed8',
+                      bold:'#0f172a', bullet:'#64748b', hr:'#cbd5e1', quote:'#475569', quoteBg:'#f8fafc', quoteBorder:'#6366f1' },
+            sepia:  { bg:'#faf6ef', text:'#3d2b1f', h1:'#2d1b0e',  h2:'#6b3f1f', h3:'#92400e',
+                      bold:'#2d1b0e', bullet:'#78716c', hr:'#d6c5b3', quote:'#78716c', quoteBg:'#f5efe6', quoteBorder:'#b45309' },
+            dark:   { bg:'#1e293b', text:'#cbd5e1', h1:'#f1f5f9',  h2:'#93c5fd', h3:'#60a5fa',
+                      bold:'#f1f5f9', bullet:'#94a3b8', hr:'#334155', quote:'#94a3b8', quoteBg:'#0f172a', quoteBorder:'#60a5fa' },
+            ocean:  { bg:'#f0f9ff', text:'#0c4a6e', h1:'#0c4a6e',  h2:'#0369a1', h3:'#0891b2',
+                      bold:'#0c4a6e', bullet:'#38bdf8', hr:'#bae6fd', quote:'#0369a1', quoteBg:'#e0f2fe', quoteBorder:'#0284c7' },
+            forest: { bg:'#f7fdf4', text:'#1a2e1a', h1:'#14532d',  h2:'#166534', h3:'#15803d',
+                      bold:'#14532d', bullet:'#4ade80', hr:'#bbf7d0', quote:'#166534', quoteBg:'#dcfce7', quoteBorder:'#16a34a' },
+            night:  { bg:'#0d1117', text:'#e6edf3', h1:'#f0f6ff',  h2:'#79c0ff', h3:'#58a6ff',
+                      bold:'#f0f6ff', bullet:'#6e7681', hr:'#21262d', quote:'#8b949e', quoteBg:'#161b22', quoteBorder:'#388bfd' }
+        };
+
+        // ── Inline parser: **bold**, *italic*, ***b+i***, `code` ──
+        function mdParseInline(raw) {
+            const out = [];
+            let text = raw;
+            while (text.length) {
+                let m;
+                if ((m = text.match(/^\*\*\*([^*]+?)\*\*\*/)))  { out.push({t:m[1],b:true, i:true });  text=text.slice(m[0].length); continue; }
+                if ((m = text.match(/^\*\*([^*]+?)\*\*/)))       { out.push({t:m[1],b:true, i:false}); text=text.slice(m[0].length); continue; }
+                if ((m = text.match(/^\*([^*\n]+?)\*/)))          { out.push({t:m[1],b:false,i:true });  text=text.slice(m[0].length); continue; }
+                if ((m = text.match(/^`([^`]+?)`/)))              { out.push({t:m[1],b:true, i:false}); text=text.slice(m[0].length); continue; }
+                // Normal text – stop before next marker
+                const nx = text.slice(1).search(/\*\*\*|\*\*|\*|`/);
+                const end = nx < 0 ? text.length : nx + 1;
+                out.push({t:text.slice(0,end), b:false, i:false});
+                text = text.slice(end);
+            }
+            return out.filter(s => s.t.length > 0);
+        }
+
+        // ── Block parser ──
+        function mdParseBlocks(md) {
+            const blocks = [];
+            for (const raw of md.split('\n')) {
+                const line = raw.trimEnd();
+                const tr   = line.trim();
+                if (!tr) {
+                    const last = blocks[blocks.length-1];
+                    if (last && last.type !== 'break') blocks.push({type:'break'});
+                    continue;
+                }
+                if (/^[-*_]{3,}$/.test(tr))           { blocks.push({type:'hr'}); continue; }
+                let m;
+                if ((m = tr.match(/^(#{1,6})\s+(.+)$/))) {
+                    const lvl = Math.min(m[1].length, 3);
+                    blocks.push({type:`h${lvl}`, text: m[2].replace(/\s*#+\s*$/, '').trim()});
+                    continue;
+                }
+                if ((m = line.match(/^(\s*)[\*\-\+]\s+(.+)$/))) {
+                    blocks.push({type:'li', depth:Math.floor(m[1].length/2), segs:mdParseInline(m[2])}); continue;
+                }
+                if ((m = line.match(/^(\s*)\d+[.)]\s+(.+)$/))) {
+                    blocks.push({type:'li', depth:Math.floor(m[1].length/2), segs:mdParseInline(m[2])}); continue;
+                }
+                if ((m = tr.match(/^>\s*(.*)/))) {
+                    blocks.push({type:'quote', segs:mdParseInline(m[1])}); continue;
+                }
+                blocks.push({type:'p', segs:mdParseInline(tr)});
+            }
+            return blocks;
+        }
+
+        // ── Canvas helpers ──
+        function mdFont(size, bold, italic, fam) {
+            const style = (bold&&italic)?'bold italic':bold?'bold':italic?'italic':'';
+            return [style, `${size}px`, fam].filter(Boolean).join(' ');
+        }
+
+        // Word-wrap inline segments → array of render lines
+        // Correctly preserves spaces between bold/italic transitions (e.g. "**Term:** text")
+        function mdWrapSegs(ctx, segs, maxW, sz, fam) {
+            // Step 1: tokenize all segments into atoms [{text, b, i, spaceAfter}]
+            const atoms = [];
+            for (const seg of segs) {
+                const tokens = seg.t.match(/\S+|\s+/g) || [];
+                for (const tok of tokens) {
+                    if (/^\s+$/.test(tok)) {
+                        // whitespace → mark previous atom as having space after
+                        if (atoms.length > 0) atoms[atoms.length - 1].spaceAfter = true;
+                    } else {
+                        atoms.push({ text: tok, b: seg.b, i: seg.i, spaceAfter: false });
+                    }
+                }
+            }
+
+            // Step 2: greedily pack atoms into lines
+            const lines = []; let line = [], lineW = 0;
+            for (let ai = 0; ai < atoms.length; ai++) {
+                const atom = atoms[ai];
+                const isLast = ai === atoms.length - 1;
+                // displayText includes trailing space if this atom has spaceAfter (and isn't last on line)
+                const raw = atom.text + (atom.spaceAfter && !isLast ? ' ' : '');
+                ctx.font = mdFont(sz, atom.b, atom.i, fam);
+                const ww = ctx.measureText(raw).width;
+                if (lineW + ww > maxW && line.length > 0) {
+                    lines.push(line);
+                    line = [{ ...atom, display: raw }];
+                    lineW = ctx.measureText(atom.text).width; // no trailing space at line start
+                } else {
+                    line.push({ ...atom, display: raw });
+                    lineW += ww;
+                }
+            }
+            if (line.length > 0) lines.push(line);
+            if (lines.length === 0) lines.push([]);
+            return lines;
+        }
+
+        // Draw one pre-wrapped line (uses atom.display for correct spacing)
+        function mdDrawLine(ctx, parts, x, y, sz, fam, textColor, boldColor) {
+            let cx = x;
+            for (const p of parts) {
+                ctx.font = mdFont(sz, p.b, p.i, fam);
+                ctx.fillStyle = p.b ? boldColor : textColor;
+                const txt = p.display !== undefined ? p.display : p.text;
+                ctx.fillText(txt, cx, y);
+                cx += ctx.measureText(txt).width;
+            }
+        }
+
+        // ── Main renderer → array of PNG data URLs (one per page, lossless) ──
+        async function mdRenderPages(blocks, opts) {
+            const { theme='light', fontSize=15, lineSpacing=1.6, quality=2, margin=55 } = opts;
+            const C  = MD_THEMES[theme] || MD_THEMES.light;
+            const fam = '"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif';
+            const q   = quality;
+
+            // Canvas = A4 at 96dpi × quality
+            const CW = Math.round(794*q), CH = Math.round(1123*q);
+            const ML = Math.round(margin*q), MR = Math.round(margin*q);
+            const MT = Math.round(65*q),     MB = Math.round(65*q);
+            const cW = CW - ML - MR;  // content width
+
+            const sz   = Math.round(fontSize*q);
+            const LH   = Math.round(sz*lineSpacing);
+            const H1sz = Math.round(sz*1.75), H2sz = Math.round(sz*1.4), H3sz = Math.round(sz*1.18);
+            const liIndent = Math.round(22*q), liMarkerX = Math.round(6*q);
+
+            const pages = [];
+            let canvas, ctx, y;
+
+            const newPage = () => {
+                canvas = document.createElement('canvas');
+                canvas.width=CW; canvas.height=CH;
+                ctx = canvas.getContext('2d');
+                ctx.fillStyle = C.bg; ctx.fillRect(0,0,CW,CH);
+                y = MT + sz;
+            };
+            const pushPage = () => pages.push(canvas.toDataURL('image/png'));
+            const ensureY = (needed) => {
+                if (y + needed > CH - MB) { pushPage(); newPage(); }
+            };
+
+            newPage();
+
+            // Draw heading (word-wraps, reserves space upfront)
+            const drawHeading = (text, hSz, color, preGap, postGap) => {
+                ctx.font = mdFont(hSz, true, false, fam);
+                const headLH = Math.round(hSz*1.28);
+                // Estimate lines
+                const estLines = Math.ceil(ctx.measureText(text).width / cW) + 1;
+                ensureY(preGap + estLines*headLH + postGap + sz);
+                y += preGap;
+                const words = text.split(' ');
+                let lineBuf = '';
+                for (const word of words) {
+                    const test = lineBuf + (lineBuf?' ':'') + word;
+                    if (lineBuf && ctx.measureText(test).width > cW) {
+                        ctx.fillStyle=color; ctx.fillText(lineBuf, ML, y); y+=headLH; lineBuf=word;
+                    } else { lineBuf=test; }
+                }
+                if (lineBuf) { ctx.fillStyle=color; ctx.fillText(lineBuf, ML, y); y+=headLH; }
+                y += postGap;
+            };
+
+            // Draw wrapped body segments
+            const drawSegs = (segs, x, w) => {
+                const wrapped = mdWrapSegs(ctx, segs, w, sz, fam);
+                for (const parts of wrapped) {
+                    ensureY(LH);
+                    mdDrawLine(ctx, parts, x, y, sz, fam, C.text, C.bold);
+                    y += LH;
+                }
+            };
+
+            // ── Process blocks ──
+            for (const block of blocks) {
+                switch (block.type) {
+
+                    case 'break':
+                        y += Math.round(LH*0.35);
+                        break;
+
+                    case 'hr':
+                        y += Math.round(LH*0.5);
+                        ensureY(Math.round(LH*0.5));
+                        ctx.save();
+                        ctx.strokeStyle = C.hr; ctx.lineWidth = Math.max(1, Math.round(q));
+                        ctx.globalAlpha = 0.6;
+                        ctx.beginPath();
+                        ctx.moveTo(ML, y - Math.round(LH*0.25));
+                        ctx.lineTo(CW-MR, y - Math.round(LH*0.25));
+                        ctx.stroke();
+                        ctx.restore();
+                        y += Math.round(LH*0.5);
+                        break;
+
+                    case 'h1':
+                        drawHeading(block.text, H1sz, C.h1, Math.round(LH*0.7), Math.round(LH*0.35));
+                        // Decorative underline
+                        ctx.save();
+                        ctx.strokeStyle=C.h1; ctx.lineWidth=Math.max(1,Math.round(1.5*q)); ctx.globalAlpha=0.18;
+                        ctx.beginPath();
+                        ctx.moveTo(ML, y-Math.round(LH*0.3)); ctx.lineTo(CW-MR, y-Math.round(LH*0.3));
+                        ctx.stroke(); ctx.restore();
+                        y += Math.round(LH*0.15);
+                        break;
+
+                    case 'h2':
+                        drawHeading(block.text, H2sz, C.h2, Math.round(LH*0.55), Math.round(LH*0.25));
+                        break;
+
+                    case 'h3':
+                        drawHeading(block.text, H3sz, C.h3, Math.round(LH*0.4), Math.round(LH*0.2));
+                        break;
+
+                    case 'p':
+                        drawSegs(block.segs, ML, cW);
+                        y += Math.round(LH*0.15);
+                        break;
+
+                    case 'li': {
+                        const dent  = block.depth * Math.round(18*q);
+                        const bx    = ML + dent + liMarkerX;
+                        const tx    = ML + dent + liIndent;
+                        const tw    = cW - dent - liIndent;
+                        const wrapped = mdWrapSegs(ctx, block.segs, tw, sz, fam);
+
+                        // Bullet + first line
+                        ensureY(LH);
+                        ctx.font = mdFont(sz,false,false,fam);
+                        ctx.fillStyle = C.bullet;
+                        ctx.fillText('•', bx, y);
+                        mdDrawLine(ctx, wrapped[0]||[], tx, y, sz, fam, C.text, C.bold);
+                        y += LH;
+                        // Continuation lines (indent, no bullet)
+                        for (let li=1; li<wrapped.length; li++) {
+                            ensureY(LH);
+                            mdDrawLine(ctx, wrapped[li], tx, y, sz, fam, C.text, C.bold);
+                            y += LH;
+                        }
+                        y += Math.round(LH*0.1);
+                        break;
+                    }
+
+                    case 'quote': {
+                        const qx = ML + Math.round(16*q);
+                        const qw = cW  - Math.round(16*q);
+                        const wrapped = mdWrapSegs(ctx, block.segs, qw, sz, fam);
+                        const totalH  = wrapped.length*LH + Math.round(LH*0.5);
+                        ensureY(totalH + Math.round(LH*0.4));
+                        y += Math.round(LH*0.2);
+                        // BG rect
+                        ctx.save();
+                        ctx.fillStyle = C.quoteBg;
+                        ctx.fillRect(ML, y-sz, cW, totalH);
+                        // Left accent bar
+                        ctx.fillStyle = C.quoteBorder;
+                        ctx.fillRect(ML, y-sz, Math.round(4*q), totalH);
+                        ctx.restore();
+                        for (const parts of wrapped) {
+                            mdDrawLine(ctx, parts, qx, y, sz, fam, C.quote, C.quote);
+                            y += LH;
+                        }
+                        y += Math.round(LH*0.35);
+                        break;
+                    }
+                }
+            }
+            pushPage(); // push last page
+            return pages;
+        }
+
+        // ── Main executor ──
+        async function executeMdToPdf() {
+            const md = document.getElementById('mdInput')?.value?.trim() || '';
+            if (!md) { showError('Vui lòng dán nội dung Markdown vào ô văn bản.'); return; }
+
+            const theme       = document.querySelector('.md-theme-btn.md-theme-active')?.dataset.theme || 'light';
+            const fontSize    = parseInt(document.getElementById('mdFontSize')?.value    || '15', 10);
+            const lineSpacing = parseFloat(document.getElementById('mdLineSpacing')?.value || '1.6');
+            const quality     = parseFloat(document.getElementById('mdQuality')?.value   || '2');
+            const margin      = parseInt(document.getElementById('mdMargin')?.value      || '55', 10);
+
+            const iBx  = document.getElementById('mdInfoBox');
+            const pWrp = document.getElementById('mdProgressWrap');
+            const pBar = document.getElementById('mdProgressBar');
+            const pPct = document.getElementById('mdProgressPct');
+            const pLbl = document.getElementById('mdProgressLabel');
+            const btn  = document.getElementById('btnMdExport');
+
+            const prog = (pct, lbl) => {
+                if(pBar) pBar.style.width=pct+'%';
+                if(pPct) pPct.textContent=pct+'%';
+                if(pLbl) pLbl.textContent=lbl;
+            };
+
+            if(pWrp) pWrp.classList.remove('hidden');
+            if(iBx)  { iBx.classList.remove('hidden'); iBx.textContent='Đang phân tích nội dung…'; }
+            if(btn)  btn.disabled = true;
+            setProcessing(true); hideMessages();
+
+            try {
+                prog(10, 'Đang phân tích Markdown…');
+                const blocks = mdParseBlocks(md);
+
+                prog(25, 'Đang render các trang…');
+                const pageUrls = await mdRenderPages(blocks, {theme, fontSize, lineSpacing, quality, margin});
+
+                prog(70, `Đang tạo PDF (${pageUrls.length} trang)…`);
+
+                const { PDFDocument } = PDFLib;
+                const pdfDoc = await PDFDocument.create();
+
+                for (let i=0; i<pageUrls.length; i++) {
+                    prog(70 + Math.round(i/pageUrls.length*25), `Nhúng trang ${i+1}/${pageUrls.length}…`);
+                    const imgBytes = Uint8Array.from(atob(pageUrls[i].split(',')[1]), c=>c.charCodeAt(0));
+                    const img = await pdfDoc.embedPng(imgBytes);
+                    const page = pdfDoc.addPage([595.28, 841.89]);
+                    page.drawImage(img, {x:0, y:0, width:595.28, height:841.89});
+                }
+
+                prog(97, 'Đang lưu file…');
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], {type:'application/pdf'});
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url;
+                // Use timestamp for unique filename
+                a.download = `markdown_${new Date().toISOString().slice(0,10)}.pdf`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(()=>URL.revokeObjectURL(url), 5000);
+
+                prog(100, 'Hoàn thành!');
+                showSuccess(`Đã xuất ${pageUrls.length} trang PDF thành công!`);
+                if(iBx) iBx.textContent = `✅ ${pageUrls.length} trang | Cỡ chữ ${fontSize}px | Chủ đề: ${theme} | Giãn dòng: ${lineSpacing}`;
+
+            } catch(err) {
+                console.error(err);
+                showError('Lỗi khi tạo PDF: ' + err.message);
+            } finally {
+                if(btn) btn.disabled=false;
+                setProcessing(false);
+            }
+        }
+
+        // ── Markdown panel event listeners ──
+
+        // Theme selector
+        document.querySelectorAll('.md-theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.md-theme-btn').forEach(b => {
+                    b.classList.remove('md-theme-active','border-violet-500','bg-violet-50');
+                    b.classList.add('border-slate-200');
+                    const sp = b.querySelector('span');
+                    if(sp) { sp.classList.remove('text-violet-700'); sp.classList.add('text-slate-600'); }
+                });
+                btn.classList.add('md-theme-active','border-violet-500','bg-violet-50');
+                btn.classList.remove('border-slate-200');
+                const sp = btn.querySelector('span');
+                if(sp) { sp.classList.add('text-violet-700'); sp.classList.remove('text-slate-600'); }
+            });
+        });
+
+        // Character counter for textarea
+        document.getElementById('mdInput')?.addEventListener('input', function() {
+            const cc = document.getElementById('mdCharCount');
+            if(cc) {
+                const len = this.value.length;
+                const words = this.value.trim() ? this.value.trim().split(/\s+/).length : 0;
+                cc.textContent = `${len.toLocaleString()} ký tự · ${words.toLocaleString()} từ`;
+            }
+        });
+
+        // Clear button
+        document.getElementById('btnMdClear')?.addEventListener('click', () => {
+            const ta = document.getElementById('mdInput');
+            const cc = document.getElementById('mdCharCount');
+            if(ta) ta.value = '';
+            if(cc) cc.textContent = '0 ký tự';
+        });
+
+        // Export button
+        document.getElementById('btnMdExport')?.addEventListener('click', executeMdToPdf);
 
         // ── Extract-image panel event listeners ──
 
