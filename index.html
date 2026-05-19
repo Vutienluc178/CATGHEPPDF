@@ -16,6 +16,11 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <!-- Google Fonts – Vietnamese support -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Be+Vietnam+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <style>
         .loader {
             width: 16px; height: 16px;
@@ -1775,6 +1780,15 @@
                                     <option value="70">Rộng (70px)</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-600">Font chữ:</label>
+                            <select id="mdFont" class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-violet-500 focus:outline-none">
+                                <option value="system">Mặc định (System)</option>
+                                <option value="roboto">Roboto (Sans-serif)</option>
+                                <option value="notoserif">Noto Serif (Serif)</option>
+                                <option value="bevietnam">Be Vietnam Pro</option>
+                            </select>
                         </div>
                     </div>
 
@@ -5562,18 +5576,128 @@
                       bold:'#f0f6ff', bullet:'#6e7681', hr:'#21262d', quote:'#8b949e', quoteBg:'#161b22', quoteBorder:'#388bfd' }
         };
 
-        // ── Inline parser: **bold**, *italic*, ***b+i***, `code` ──
+        // ── Font mapping ──
+        const MD_FONTS = {
+            system:    '"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif',
+            roboto:    '"Roboto","Helvetica Neue",Arial,sans-serif',
+            notoserif: '"Noto Serif",Georgia,"Times New Roman",serif',
+            bevietnam: '"Be Vietnam Pro","Roboto",Arial,sans-serif'
+        };
+
+        // ── KaTeX CSS cache (fetched once, reused for all SVG math renders) ──
+        let _katexCssText = null;
+        async function getKatexCssText() {
+            if (_katexCssText !== null) return _katexCssText;
+            try {
+                const link = document.querySelector('link[href*="katex.min.css"]');
+                if (!link) { _katexCssText = ''; return ''; }
+                const base = link.href.substring(0, link.href.lastIndexOf('/') + 1);
+
+                // Fetch CSS and resolve relative font URLs → absolute CDN URLs
+                const res = await fetch(link.href);
+                let css = await res.text();
+                css = css.replace(/url\((['"]?)(?!https?:|data:)([^'")\s]+)\1\)/g,
+                    (_, q, path) => `url(${q}${base}${path}${q})`);
+
+                // SVG blobs cannot load external resources (browser security).
+                // We must embed the key math fonts as base64 data URIs.
+                const keyFonts = [
+                    'fonts/KaTeX_Math-Italic.woff2',
+                    'fonts/KaTeX_Main-Regular.woff2',
+                    'fonts/KaTeX_Main-Bold.woff2',
+                    'fonts/KaTeX_Main-Italic.woff2',
+                    'fonts/KaTeX_AMS-Regular.woff2',
+                    'fonts/KaTeX_Size1-Regular.woff2',
+                ];
+                const fontDataList = await Promise.all(keyFonts.map(async fp => {
+                    try {
+                        const r = await fetch(base + fp);
+                        if (!r.ok) return null;
+                        const buf = await r.arrayBuffer();
+                        const bytes = new Uint8Array(buf);
+                        let bin = '';
+                        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+                        return { url: base + fp, data: 'data:font/woff2;base64,' + btoa(bin) };
+                    } catch(e) { return null; }
+                }));
+                for (const fd of fontDataList) {
+                    if (fd) css = css.split(fd.url).join(fd.data);
+                }
+                _katexCssText = css;
+            } catch(e) { _katexCssText = ''; }
+            return _katexCssText;
+        }
+
+        // ── Render a LaTeX string to a canvas element via KaTeX + SVG foreignObject ──
+        async function renderMathImg(latex, displayMode, pxSize, color) {
+            if (typeof katex === 'undefined') return null;
+            let html;
+            try {
+                html = katex.renderToString(latex, { displayMode, throwOnError: false, strict: false });
+            } catch(e) { return null; }
+
+            // Measure rendered size in DOM
+            const tmp = document.createElement('div');
+            tmp.style.cssText = `position:fixed;left:-9999px;top:0;font-size:${pxSize}px;` +
+                                 `color:${color};visibility:hidden;white-space:${displayMode?'normal':'nowrap'}`;
+            tmp.innerHTML = html;
+            document.body.appendChild(tmp);
+            await new Promise(r => requestAnimationFrame(r));
+            const W = Math.max(Math.ceil(tmp.scrollWidth)  + 10, 20);
+            const H = Math.max(Math.ceil(tmp.scrollHeight) +  6, 16);
+            document.body.removeChild(tmp);
+
+            // Embed KaTeX CSS inline so SVG foreignObject renders correctly
+            const css = await getKatexCssText();
+            const scale = 2; // 2× for crispness
+            const svgW = W * scale, svgH = H * scale;
+            const svgStr = [
+                `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">`,
+                `<defs><style>`,
+                css,
+                `.katex{font-size:${pxSize*scale}px!important;color:${color}}`,
+                `.katex-display{margin:0!important;padding:2px 0}`,
+                `</style></defs>`,
+                `<foreignObject x="0" y="0" width="${svgW}" height="${svgH}">`,
+                `<div xmlns="http://www.w3.org/1999/xhtml"`,
+                ` style="font-size:${pxSize*scale}px;color:${color};line-height:1.2">`,
+                html,
+                `</div></foreignObject></svg>`
+            ].join('');
+
+            return new Promise(resolve => {
+                const img = new Image();
+                const blob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+                const url  = URL.createObjectURL(blob);
+                img.onload = () => {
+                    const cv = document.createElement('canvas');
+                    cv.width = svgW; cv.height = svgH;
+                    cv.getContext('2d').drawImage(img, 0, 0);
+                    URL.revokeObjectURL(url);
+                    resolve({ canvas: cv, W, H }); // W/H in CSS px (display size)
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+                img.src = url;
+            });
+        }
+
+        // ── Inline parser: **bold**, *italic*, ***b+i***, `code`, $math$ ──
         function mdParseInline(raw) {
             const out = [];
             let text = raw;
             while (text.length) {
                 let m;
+                // Inline math $...$ (skip $$)
+                if (text[0]==='$' && text[1]!=='$' && (m=text.match(/^\$([^$\n]+?)\$/))) {
+                    out.push({t:m[1], math:true, b:false, i:false});
+                    text=text.slice(m[0].length); continue;
+                }
                 if ((m = text.match(/^\*\*\*([^*]+?)\*\*\*/)))  { out.push({t:m[1],b:true, i:true });  text=text.slice(m[0].length); continue; }
                 if ((m = text.match(/^\*\*([^*]+?)\*\*/)))       { out.push({t:m[1],b:true, i:false}); text=text.slice(m[0].length); continue; }
                 if ((m = text.match(/^\*([^*\n]+?)\*/)))          { out.push({t:m[1],b:false,i:true });  text=text.slice(m[0].length); continue; }
                 if ((m = text.match(/^`([^`]+?)`/)))              { out.push({t:m[1],b:true, i:false}); text=text.slice(m[0].length); continue; }
                 // Normal text – stop before next marker
-                const nx = text.slice(1).search(/\*\*\*|\*\*|\*|`/);
+                const nx = text.slice(1).search(/\$|\*\*\*|\*\*|\*|`/);
                 const end = nx < 0 ? text.length : nx + 1;
                 out.push({t:text.slice(0,end), b:false, i:false});
                 text = text.slice(end);
@@ -5581,19 +5705,38 @@
             return out.filter(s => s.t.length > 0);
         }
 
-        // ── Block parser ──
+        // ── Block parser (while-loop to support multi-line $$...$$) ──
         function mdParseBlocks(md) {
             const blocks = [];
-            for (const raw of md.split('\n')) {
+            const lines  = md.split('\n');
+            let i = 0;
+            while (i < lines.length) {
+                const raw  = lines[i]; i++;
                 const line = raw.trimEnd();
                 const tr   = line.trim();
+
                 if (!tr) {
                     const last = blocks[blocks.length-1];
                     if (last && last.type !== 'break') blocks.push({type:'break'});
                     continue;
                 }
-                if (/^[-*_]{3,}$/.test(tr))           { blocks.push({type:'hr'}); continue; }
+                if (/^[-*_]{3,}$/.test(tr)) { blocks.push({type:'hr'}); continue; }
+
                 let m;
+
+                // Display math: $$...$$ single-line
+                if ((m = tr.match(/^\$\$([^$]+)\$\$$/))) {
+                    blocks.push({type:'mathblock', latex: m[1].trim()}); continue;
+                }
+                // Display math: $$ ... $$ multi-line fence
+                if (tr === '$$') {
+                    const mathLines = [];
+                    while (i < lines.length && lines[i].trim() !== '$$') { mathLines.push(lines[i]); i++; }
+                    if (i < lines.length) i++; // skip closing $$
+                    if (mathLines.length) blocks.push({type:'mathblock', latex: mathLines.join('\n').trim()});
+                    continue;
+                }
+
                 if ((m = tr.match(/^(#{1,6})\s+(.+)$/))) {
                     const lvl = Math.min(m[1].length, 3);
                     blocks.push({type:`h${lvl}`, text: m[2].replace(/\s*#+\s*$/, '').trim()});
@@ -5620,37 +5763,59 @@
         }
 
         // Word-wrap inline segments → array of render lines
-        // Correctly preserves spaces between bold/italic transitions (e.g. "**Term:** text")
-        function mdWrapSegs(ctx, segs, maxW, sz, fam) {
-            // Step 1: tokenize all segments into atoms [{text, b, i, spaceAfter}]
+        // Handles: plain text, **bold**, *italic*, $math$ (pre-rendered images)
+        function mdWrapSegs(ctx, segs, maxW, sz, fam, mathCache) {
+            // Step 1: tokenize segments into atoms
             const atoms = [];
             for (const seg of segs) {
-                const tokens = seg.t.match(/\S+|\s+/g) || [];
-                for (const tok of tokens) {
-                    if (/^\s+$/.test(tok)) {
-                        // whitespace → mark previous atom as having space after
-                        if (atoms.length > 0) atoms[atoms.length - 1].spaceAfter = true;
-                    } else {
-                        atoms.push({ text: tok, b: seg.b, i: seg.i, spaceAfter: false });
+                if (seg.math) {
+                    // Math atom – width comes from pre-rendered image
+                    const mi = mathCache?.get(seg.t);
+                    atoms.push({ text:'', b:false, i:false, spaceAfter:false,
+                                  mathImg: mi || null, mathLatex: seg.t });
+                } else {
+                    const tokens = seg.t.match(/\S+|\s+/g) || [];
+                    for (const tok of tokens) {
+                        if (/^\s+$/.test(tok)) {
+                            if (atoms.length > 0) atoms[atoms.length-1].spaceAfter = true;
+                        } else {
+                            atoms.push({ text:tok, b:seg.b, i:seg.i, spaceAfter:false });
+                        }
                     }
                 }
             }
 
-            // Step 2: greedily pack atoms into lines
+            // Step 2: greedily pack into lines
             const lines = []; let line = [], lineW = 0;
             for (let ai = 0; ai < atoms.length; ai++) {
-                const atom = atoms[ai];
-                const isLast = ai === atoms.length - 1;
-                // displayText includes trailing space if this atom has spaceAfter (and isn't last on line)
-                const raw = atom.text + (atom.spaceAfter && !isLast ? ' ' : '');
-                ctx.font = mdFont(sz, atom.b, atom.i, fam);
-                const ww = ctx.measureText(raw).width;
+                const atom    = atoms[ai];
+                const isLast  = ai === atoms.length - 1;
+                let   ww;
+                let   display;
+
+                if (atom.mathImg) {
+                    ww      = atom.mathImg.W + (atom.spaceAfter && !isLast ? 4 : 0);
+                    display = null; // drawn as image
+                } else if (atom.mathLatex) {
+                    // Math failed to render – measure fallback $latex$ text
+                    ctx.font = mdFont(Math.round(sz * 0.88), false, true, '"Courier New",monospace');
+                    display = '$' + atom.mathLatex + '$';
+                    ww = ctx.measureText(display).width + (atom.spaceAfter && !isLast ? 4 : 0);
+                } else {
+                    display = atom.text + (atom.spaceAfter && !isLast ? ' ' : '');
+                    ctx.font = mdFont(sz, atom.b, atom.i, fam);
+                    ww = ctx.measureText(display).width;
+                }
+
                 if (lineW + ww > maxW && line.length > 0) {
                     lines.push(line);
-                    line = [{ ...atom, display: raw }];
-                    lineW = ctx.measureText(atom.text).width; // no trailing space at line start
+                    // Recalculate width without trailing space at line start
+                    const startW = atom.mathImg ? atom.mathImg.W
+                                                : ctx.measureText(atom.text).width;
+                    line  = [{ ...atom, display: display || atom.text }];
+                    lineW = startW;
                 } else {
-                    line.push({ ...atom, display: raw });
+                    line.push({ ...atom, display: display || atom.text });
                     lineW += ww;
                 }
             }
@@ -5659,23 +5824,39 @@
             return lines;
         }
 
-        // Draw one pre-wrapped line (uses atom.display for correct spacing)
+        // Draw one pre-wrapped line – text tokens and/or math images
         function mdDrawLine(ctx, parts, x, y, sz, fam, textColor, boldColor) {
             let cx = x;
             for (const p of parts) {
-                ctx.font = mdFont(sz, p.b, p.i, fam);
-                ctx.fillStyle = p.b ? boldColor : textColor;
-                const txt = p.display !== undefined ? p.display : p.text;
-                ctx.fillText(txt, cx, y);
-                cx += ctx.measureText(txt).width;
+                if (p.mathImg) {
+                    // Baseline-align the math image (ascender ≈ 72% of font size)
+                    const { canvas: mc, W, H } = p.mathImg;
+                    const drawY = y - Math.round(sz * 0.72);
+                    ctx.drawImage(mc, cx, drawY, W, H);
+                    cx += W + (p.spaceAfter ? 4 : 0);
+                } else if (p.mathLatex) {
+                    // Math render failed – show as italic monospace $latex$
+                    ctx.font = mdFont(Math.round(sz * 0.88), false, true, '"Courier New",monospace');
+                    ctx.fillStyle = textColor;
+                    const fallback = '$' + p.mathLatex + '$';
+                    ctx.fillText(fallback, cx, y);
+                    cx += ctx.measureText(fallback).width + (p.spaceAfter ? 4 : 0);
+                } else {
+                    ctx.font = mdFont(sz, p.b, p.i, fam);
+                    ctx.fillStyle = p.b ? boldColor : textColor;
+                    const txt = p.display !== undefined ? p.display : p.text;
+                    ctx.fillText(txt, cx, y);
+                    cx += ctx.measureText(txt).width;
+                }
             }
         }
 
         // ── Main renderer → array of PNG data URLs (one per page, lossless) ──
         async function mdRenderPages(blocks, opts) {
-            const { theme='light', fontSize=15, lineSpacing=1.6, quality=2, margin=55 } = opts;
-            const C  = MD_THEMES[theme] || MD_THEMES.light;
-            const fam = '"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif';
+            const { theme='light', fontSize=15, lineSpacing=1.6, quality=2, margin=55,
+                    fontKey='system', mathInlineCache=new Map(), mathDisplayCache=new Map() } = opts;
+            const C   = MD_THEMES[theme] || MD_THEMES.light;
+            const fam = MD_FONTS[fontKey] || MD_FONTS.system;
             const q   = quality;
 
             // Canvas = A4 at 96dpi × quality
@@ -5726,9 +5907,9 @@
                 y += postGap;
             };
 
-            // Draw wrapped body segments
+            // Draw wrapped body segments (passes math cache for inline formulas)
             const drawSegs = (segs, x, w) => {
-                const wrapped = mdWrapSegs(ctx, segs, w, sz, fam);
+                const wrapped = mdWrapSegs(ctx, segs, w, sz, fam, mathInlineCache);
                 for (const parts of wrapped) {
                     ensureY(LH);
                     mdDrawLine(ctx, parts, x, y, sz, fam, C.text, C.bold);
@@ -5787,7 +5968,7 @@
                         const bx    = ML + dent + liMarkerX;
                         const tx    = ML + dent + liIndent;
                         const tw    = cW - dent - liIndent;
-                        const wrapped = mdWrapSegs(ctx, block.segs, tw, sz, fam);
+                        const wrapped = mdWrapSegs(ctx, block.segs, tw, sz, fam, mathInlineCache);
 
                         // Bullet + first line
                         ensureY(LH);
@@ -5806,10 +5987,35 @@
                         break;
                     }
 
+                    case 'mathblock': {
+                        // Display math – centered, with visible box fallback
+                        const mi = mathDisplayCache.get(block.latex);
+                        if (mi) {
+                            const { canvas: mc, W, H } = mi;
+                            ensureY(H + Math.round(LH * 0.8));
+                            y += Math.round(LH * 0.3);
+                            // Center horizontally
+                            const drawX = ML + Math.max(0, (cW - W) / 2);
+                            ctx.drawImage(mc, drawX, y, W, H);
+                            y += H + Math.round(LH * 0.3);
+                        } else {
+                            // KaTeX not loaded – show as monospace block
+                            ensureY(LH + Math.round(LH * 0.6));
+                            y += Math.round(LH * 0.2);
+                            ctx.fillStyle = C.quoteBg;
+                            ctx.fillRect(ML, y - sz, cW, LH + Math.round(sz * 0.6));
+                            ctx.fillStyle = C.h3;
+                            ctx.font = mdFont(Math.round(sz * 0.9), false, true, '"Courier New",monospace');
+                            ctx.fillText(block.latex, ML + Math.round(8*q), y);
+                            y += LH + Math.round(LH * 0.3);
+                        }
+                        break;
+                    }
+
                     case 'quote': {
                         const qx = ML + Math.round(16*q);
                         const qw = cW  - Math.round(16*q);
-                        const wrapped = mdWrapSegs(ctx, block.segs, qw, sz, fam);
+                        const wrapped = mdWrapSegs(ctx, block.segs, qw, sz, fam, mathInlineCache);
                         const totalH  = wrapped.length*LH + Math.round(LH*0.5);
                         ensureY(totalH + Math.round(LH*0.4));
                         y += Math.round(LH*0.2);
@@ -5844,6 +6050,7 @@
             const lineSpacing = parseFloat(document.getElementById('mdLineSpacing')?.value || '1.6');
             const quality     = parseFloat(document.getElementById('mdQuality')?.value   || '2');
             const margin      = parseInt(document.getElementById('mdMargin')?.value      || '55', 10);
+            const fontKey     = document.getElementById('mdFont')?.value || 'system';
 
             const iBx  = document.getElementById('mdInfoBox');
             const pWrp = document.getElementById('mdProgressWrap');
@@ -5867,8 +6074,58 @@
                 prog(10, 'Đang phân tích Markdown…');
                 const blocks = mdParseBlocks(md);
 
+                // Font loading – trigger browser to load the chosen Google Font
+                const fam = MD_FONTS[fontKey] || MD_FONTS.system;
+                if (fontKey !== 'system') {
+                    prog(12, 'Đang tải font chữ…');
+                    const testEl = document.createElement('span');
+                    testEl.style.cssText = `position:fixed;left:-9999px;font-family:${fam};`;
+                    testEl.textContent = 'Kiểm tra font tiếng Việt';
+                    document.body.appendChild(testEl);
+                    await document.fonts.ready;
+                    document.body.removeChild(testEl);
+                }
+
+                // Pre-render all math formulas before drawing pages
+                const C_colors = MD_THEMES[theme] || MD_THEMES.light;
+                const mathPxSize = fontSize * quality;
+                const mathInlineCache = new Map();
+                const mathDisplayCache = new Map();
+                if (typeof katex !== 'undefined') {
+                    // Collect all unique latex strings
+                    const inlineLatex = new Set();
+                    const displayLatex = new Set();
+                    for (const block of blocks) {
+                        if (block.type === 'mathblock') {
+                            displayLatex.add(block.latex);
+                        }
+                        if (block.segs) {
+                            for (const s of block.segs) {
+                                if (s.math) inlineLatex.add(s.t);
+                            }
+                        }
+                    }
+                    const totalMath = inlineLatex.size + displayLatex.size;
+                    if (totalMath > 0) {
+                        prog(15, `Đang render ${totalMath} công thức toán…`);
+                        let done = 0;
+                        for (const latex of displayLatex) {
+                            const mi = await renderMathImg(latex, true, Math.round(mathPxSize * 1.2), C_colors.text);
+                            if (mi) mathDisplayCache.set(latex, mi);
+                            done++;
+                            prog(15 + Math.round(done / totalMath * 8), `Render công thức ${done}/${totalMath}…`);
+                        }
+                        for (const latex of inlineLatex) {
+                            const mi = await renderMathImg(latex, false, mathPxSize, C_colors.text);
+                            if (mi) mathInlineCache.set(latex, mi);
+                            done++;
+                            prog(15 + Math.round(done / totalMath * 8), `Render công thức ${done}/${totalMath}…`);
+                        }
+                    }
+                }
+
                 prog(25, 'Đang render các trang…');
-                const pageUrls = await mdRenderPages(blocks, {theme, fontSize, lineSpacing, quality, margin});
+                const pageUrls = await mdRenderPages(blocks, {theme, fontSize, lineSpacing, quality, margin, fontKey, mathInlineCache, mathDisplayCache});
 
                 prog(70, `Đang tạo PDF (${pageUrls.length} trang)…`);
 
@@ -5896,7 +6153,8 @@
 
                 prog(100, 'Hoàn thành!');
                 showSuccess(`Đã xuất ${pageUrls.length} trang PDF thành công!`);
-                if(iBx) iBx.textContent = `✅ ${pageUrls.length} trang | Cỡ chữ ${fontSize}px | Chủ đề: ${theme} | Giãn dòng: ${lineSpacing}`;
+                const fontLabel = {system:'System',roboto:'Roboto',notoserif:'Noto Serif',bevietnam:'Be Vietnam Pro'}[fontKey]||fontKey;
+                if(iBx) iBx.textContent = `✅ ${pageUrls.length} trang | Cỡ chữ ${fontSize}px | Font: ${fontLabel} | Chủ đề: ${theme} | Giãn dòng: ${lineSpacing}`;
 
             } catch(err) {
                 console.error(err);
