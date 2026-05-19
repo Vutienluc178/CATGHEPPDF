@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công Cụ PDF Thông Minh THẦY LỰC</title>
+    <title>Công Cụ PDF Thông Minh</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -45,6 +45,42 @@
             background: repeating-linear-gradient(0deg,#f8fafc 0,#f8fafc 1px,transparent 1px,transparent 32px),
                         repeating-linear-gradient(90deg,#f8fafc 0,#f8fafc 1px,transparent 1px,transparent 32px);
             background-color: #fff;
+        }
+
+        /* Signature drag-drop preview */
+        #sigPreviewContainer {
+            min-height: 180px;
+            background: #e2e8f0;
+            touch-action: none;
+        }
+        #sigOverlay {
+            min-width: 30px;
+            min-height: 16px;
+            box-sizing: border-box;
+            border: 2px dashed #6366f1;
+            border-radius: 4px;
+            background: rgba(99,102,241,0.06);
+            transition: border-color 0.15s;
+        }
+        #sigOverlay:hover { border-color: #4f46e5; }
+        #sigResizeHandle {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            width: 14px;
+            height: 14px;
+            background: #6366f1;
+            border-radius: 50%;
+            cursor: se-resize;
+            z-index: 10;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        #sigPreviewCanvas { display: block; width: 100%; height: auto; }
+        #sigPreviewEmpty {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -706,69 +742,92 @@
                         <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v9"/><path d="M15.5 19.5c.83-.83 1.5-2 1.5-3a2 2 0 0 0-4 0c0 1 .67 2.17 1.5 3l1 1 1-1z"/></svg>
                         Chèn chữ ký vào PDF
                     </h3>
-                    <div class="space-y-4 border-t pt-3">
+
+                    <!-- BƯỚC 1: Tạo chữ ký -->
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 space-y-3">
+                        <p class="text-xs font-bold text-indigo-700 uppercase tracking-wide flex items-center gap-1.5">
+                            <span class="bg-indigo-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-black">1</span>
+                            Tạo chữ ký
+                        </p>
                         <!-- Chế độ -->
                         <div class="flex gap-2">
-                            <label class="sig-mode-label flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-indigo-500 bg-indigo-50 cursor-pointer text-sm font-semibold text-indigo-700 transition-all">
+                            <label class="sig-mode-label flex-1 flex items-center justify-center gap-2 p-2 rounded-xl border-2 border-indigo-500 bg-white cursor-pointer text-xs font-semibold text-indigo-700 transition-all">
                                 <input type="radio" name="sigMode" value="draw" class="hidden" checked />
                                 ✍️ Vẽ chữ ký
                             </label>
-                            <label class="sig-mode-label flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-slate-200 cursor-pointer text-sm font-semibold text-slate-600 hover:border-indigo-300 transition-all">
+                            <label class="sig-mode-label flex-1 flex items-center justify-center gap-2 p-2 rounded-xl border-2 border-slate-200 bg-white cursor-pointer text-xs font-semibold text-slate-600 hover:border-indigo-300 transition-all">
                                 <input type="radio" name="sigMode" value="upload" class="hidden" />
                                 🖼️ Tải ảnh lên
                             </label>
                         </div>
                         <!-- Vẽ -->
                         <div id="sigDrawContainer">
-                            <canvas id="signatureCanvas" width="500" height="160" class="w-full border-2 border-dashed border-slate-300 rounded-xl cursor-crosshair" style="max-height:160px"></canvas>
-                            <button id="btnClearSig" class="mt-2 text-xs text-slate-500 hover:text-red-500 underline transition-colors">🗑 Xóa và vẽ lại</button>
+                            <canvas id="signatureCanvas" width="500" height="140" class="w-full border-2 border-dashed border-slate-300 rounded-xl cursor-crosshair" style="max-height:140px"></canvas>
+                            <div class="flex items-center justify-between mt-1.5">
+                                <button id="btnClearSig" class="text-xs text-slate-400 hover:text-red-500 underline transition-colors">🗑 Xóa vẽ lại</button>
+                                <button id="btnSigUpdatePreview" class="text-xs bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg font-medium hover:bg-indigo-200 transition-colors">↺ Cập nhật xem trước</button>
+                            </div>
                         </div>
                         <!-- Upload ảnh -->
                         <div id="sigUploadContainer" class="hidden space-y-2">
-                            <label class="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all text-sm text-slate-600 font-medium">
+                            <label class="flex items-center justify-center gap-2 p-2.5 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all text-xs text-slate-600 font-medium">
                                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                 Chọn ảnh chữ ký (PNG/JPG)
                                 <input type="file" id="sigImageInput" accept="image/*" class="hidden" />
                             </label>
-                            <img id="sigImagePreview" class="hidden max-h-28 mx-auto rounded-lg border shadow-sm" />
+                            <img id="sigImagePreview" class="hidden max-h-20 mx-auto rounded-lg border shadow-sm" />
                         </div>
-                        <!-- Options hàng ngang -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1.5">
-                                <label class="block text-xs font-medium text-slate-600">Chiều rộng: <span id="sigWidthVal" class="text-indigo-600 font-bold">150px</span></label>
-                                <input type="range" id="sigWidth" min="50" max="400" value="150" class="w-full accent-indigo-500" />
+                    </div>
+
+                    <!-- BƯỚC 2: Kéo thả vị trí -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <p class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                                <span class="bg-slate-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-black">2</span>
+                                Kéo chữ ký đến vị trí mong muốn
+                            </p>
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-xs text-slate-500 font-medium">Trang:</label>
+                                <input type="number" id="sigPreviewPage" min="1" value="1" class="w-12 text-xs border border-slate-300 rounded-lg px-1.5 py-0.5 text-center focus:border-indigo-500 focus:outline-none" />
+                                <button id="btnSigRefreshPreview" class="text-xs bg-indigo-600 text-white px-2.5 py-1 rounded-lg font-medium hover:bg-indigo-700 transition-colors">↺ Xem trang</button>
                             </div>
-                            <div class="space-y-1.5">
+                        </div>
+                        <!-- Interactive preview -->
+                        <div id="sigPreviewContainer" class="relative rounded-lg overflow-hidden select-none" style="cursor:default">
+                            <canvas id="sigPreviewCanvas"></canvas>
+                            <!-- Draggable signature overlay -->
+                            <div id="sigOverlay" class="absolute cursor-move" style="left:62%;top:62%;width:22%">
+                                <img id="sigOverlayImg" class="w-full h-auto object-contain pointer-events-none block" alt="chữ ký" style="min-height:16px" />
+                                <div id="sigResizeHandle" title="Kéo để thay đổi kích thước"></div>
+                            </div>
+                            <!-- Empty state -->
+                            <div id="sigPreviewEmpty" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-100">
+                                <div class="text-3xl mb-1">📄</div>
+                                <div class="text-xs font-medium">Nhấn "Xem trang" để tải bản xem trước</div>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 text-center">✋ Kéo chữ ký để di chuyển &nbsp;·&nbsp; Kéo ● góc dưới phải để thay đổi kích thước</p>
+                    </div>
+
+                    <!-- BƯỚC 3: Tuỳ chọn & xuất file -->
+                    <div class="bg-green-50 border border-green-100 rounded-xl p-3 space-y-3">
+                        <p class="text-xs font-bold text-green-700 uppercase tracking-wide flex items-center gap-1.5">
+                            <span class="bg-green-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-black">3</span>
+                            Tùy chọn & Xuất file
+                        </p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
                                 <label class="block text-xs font-medium text-slate-600">Độ mờ: <span id="sigOpacityVal" class="text-indigo-600 font-bold">100%</span></label>
                                 <input type="range" id="sigOpacity" min="10" max="100" value="100" class="w-full accent-indigo-500" />
                             </div>
-                        </div>
-                        <!-- Vị trí & trang -->
-                        <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1.5">
-                                <label class="block text-xs font-medium text-slate-600">Vị trí chèn:</label>
-                                <div class="border border-slate-200 rounded-xl p-1.5 bg-slate-50">
-                                    <div class="grid grid-cols-3 gap-1" id="sigPosPicker" data-state-key="sigPosition" data-color="indigo">
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="tl">↖</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="tc">↑</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="tr">↗</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="ml">←</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="mc">⊙</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="mr">→</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="bl">↙</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-white border-2 border-transparent hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-all text-sm shadow-sm" data-pos="bc">↓</button>
-                                        <button type="button" class="pos-btn h-8 rounded-lg bg-indigo-500 border-2 border-indigo-500 text-white pos-active transition-all text-sm shadow-sm" data-pos="br">↘</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
                                 <label class="block text-xs font-medium text-slate-600">Áp dụng trang:</label>
-                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="sigPages" value="all" checked class="accent-indigo-600" /> Tất cả</label>
-                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="radio" name="sigPages" value="custom" class="accent-indigo-600" /> Chỉ định</label>
+                                <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="radio" name="sigPages" value="all" checked class="accent-indigo-600" /> Tất cả trang</label>
+                                <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="radio" name="sigPages" value="custom" class="accent-indigo-600" /> Chỉ định trang</label>
                                 <input type="text" id="sigCustomPages" class="hidden w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none" placeholder="VD: 1, 3-5" />
                             </div>
                         </div>
-                        <button id="btnSignature" class="w-full bg-indigo-600 text-white hover:bg-indigo-700 inline-flex items-center justify-center font-medium rounded-xl px-5 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button id="btnSignature" class="w-full bg-indigo-600 text-white hover:bg-indigo-700 inline-flex items-center justify-center font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md">
                             <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             Chèn chữ ký & Tải PDF
                         </button>
@@ -1030,8 +1089,9 @@
             isProcessing: false,
             wmColor: { r: 0.94, g: 0.27, b: 0.27 },
             pnColor: { r: 0.12, g: 0.16, b: 0.23 },
-            // Signature
-            sigPosition: 'br', sigImageBytes: null, sigImageIsPng: true,
+            // Signature — overlay position as fractions of page (leftPct, topPct, widthPct)
+            sigOverlayPos: { leftPct: 0.60, topPct: 0.75, widthPct: 0.25 },
+            sigImageBytes: null, sigImageIsPng: true,
             // Insert image
             insertImgPosition: 'mc', insertImgBytes: null, insertImgIsPng: true,
             // Insert text
@@ -1889,6 +1949,147 @@
         }
 
         // ---- Chèn chữ ký ----
+        // ---- Signature preview & drag-drop ----
+        async function renderSigPreview() {
+            if (!state.pdfBytes) return;
+            const canvas  = document.getElementById('sigPreviewCanvas');
+            const empty   = document.getElementById('sigPreviewEmpty');
+            const overlay = document.getElementById('sigOverlay');
+            if (!canvas) return;
+            try {
+                const pageNum = Math.max(1, parseInt(document.getElementById('sigPreviewPage')?.value || 1));
+                const pdfDoc  = await pdfjsLib.getDocument({ data: state.pdfBytes.slice() }).promise;
+                const page    = await pdfDoc.getPage(Math.min(pageNum, pdfDoc.numPages));
+                // Scale to fit container width (~600px max)
+                const container = document.getElementById('sigPreviewContainer');
+                const cw  = container ? container.clientWidth : 400;
+                const vp0 = page.getViewport({ scale: 1 });
+                const scale = Math.min(2, cw / vp0.width);
+                const vp   = page.getViewport({ scale });
+                canvas.width  = vp.width;
+                canvas.height = vp.height;
+                const ctx = canvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport: vp }).promise;
+                if (empty) empty.style.display = 'none';
+                // Show overlay
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    // Apply stored position
+                    const ov = state.sigOverlayPos;
+                    overlay.style.left  = (ov.leftPct  * 100) + '%';
+                    overlay.style.top   = (ov.topPct   * 100) + '%';
+                    overlay.style.width = (ov.widthPct * 100) + '%';
+                }
+                updateSigOverlayImg();
+            } catch(e) {
+                console.error('renderSigPreview:', e);
+                if (empty) { empty.style.display = 'flex'; empty.querySelector('div:last-child').textContent = 'Lỗi tải trang: ' + e.message; }
+            }
+        }
+
+        function updateSigOverlayImg() {
+            const overlayImg = document.getElementById('sigOverlayImg');
+            if (!overlayImg) return;
+            const sigMode = document.querySelector('input[name="sigMode"]:checked')?.value || 'draw';
+            if (sigMode === 'draw') {
+                const canvas = document.getElementById('signatureCanvas');
+                if (!canvas) return;
+                overlayImg.src = canvas.toDataURL('image/png');
+            } else {
+                if (state.sigImageBytes) {
+                    const blob = new Blob([state.sigImageBytes], { type: state.sigImageIsPng ? 'image/png' : 'image/jpeg' });
+                    overlayImg.src = URL.createObjectURL(blob);
+                }
+            }
+        }
+
+        function initSigDragDrop() {
+            const overlay = document.getElementById('sigOverlay');
+            const resizeHandle = document.getElementById('sigResizeHandle');
+            const container = document.getElementById('sigPreviewContainer');
+            if (!overlay || !resizeHandle || !container) return;
+
+            let isDragging = false, isResizing = false;
+            let startX = 0, startY = 0, startLeft = 0, startTop = 0, startWidth = 0;
+
+            function getRelPos(e) {
+                const touch = e.touches ? e.touches[0] : e;
+                const rect  = container.getBoundingClientRect();
+                return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+            }
+
+            function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+            function saveOverlayState() {
+                const ow = parseFloat(overlay.style.width) / 100;
+                state.sigOverlayPos = {
+                    leftPct:  parseFloat(overlay.style.left)  / 100,
+                    topPct:   parseFloat(overlay.style.top)   / 100,
+                    widthPct: isNaN(ow) ? 0.25 : ow
+                };
+            }
+
+            // ----- Move overlay -----
+            overlay.addEventListener('mousedown', e => {
+                if (e.target === resizeHandle) return;
+                isDragging = true;
+                const pos = getRelPos(e);
+                startX = pos.x; startY = pos.y;
+                startLeft = parseFloat(overlay.style.left) || 60;
+                startTop  = parseFloat(overlay.style.top)  || 75;
+                e.preventDefault();
+            });
+            overlay.addEventListener('touchstart', e => {
+                if (e.target === resizeHandle) return;
+                isDragging = true;
+                const pos = getRelPos(e);
+                startX = pos.x; startY = pos.y;
+                startLeft = parseFloat(overlay.style.left) || 60;
+                startTop  = parseFloat(overlay.style.top)  || 75;
+                e.preventDefault();
+            }, { passive: false });
+
+            // ----- Resize handle -----
+            resizeHandle.addEventListener('mousedown', e => {
+                isResizing = true;
+                startX     = getRelPos(e).x;
+                startWidth = parseFloat(overlay.style.width) || 22;
+                e.stopPropagation(); e.preventDefault();
+            });
+            resizeHandle.addEventListener('touchstart', e => {
+                isResizing = true;
+                startX     = getRelPos(e).x;
+                startWidth = parseFloat(overlay.style.width) || 22;
+                e.stopPropagation(); e.preventDefault();
+            }, { passive: false });
+
+            // ----- Move/resize on mousemove/touchmove -----
+            function onMove(e) {
+                if (!isDragging && !isResizing) return;
+                const pos  = getRelPos(e);
+                const rect = container.getBoundingClientRect();
+                const cW   = rect.width, cH = rect.height;
+                if (isDragging) {
+                    const dx = (pos.x - startX) / cW * 100;
+                    const dy = (pos.y - startY) / cH * 100;
+                    const curW = parseFloat(overlay.style.width) || 22;
+                    overlay.style.left = clamp(startLeft + dx, 0, 100 - curW) + '%';
+                    overlay.style.top  = clamp(startTop  + dy, 0, 95)         + '%';
+                } else if (isResizing) {
+                    const dx = (pos.x - startX) / cW * 100;
+                    overlay.style.width = clamp(startWidth + dx, 5, 85) + '%';
+                }
+                saveOverlayState();
+                if (e.cancelable) e.preventDefault();
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('touchmove', onMove, { passive: false });
+
+            function onUp() { isDragging = false; isResizing = false; }
+            document.addEventListener('mouseup',  onUp);
+            document.addEventListener('touchend', onUp);
+        }
+
         async function executeSignature() {
             try {
                 const PDFLibObj = getPDFLib();
@@ -1916,19 +2117,23 @@
 
                 const PDFDocument = PDFLibObj.PDFDocument;
                 const pdfDoc = await PDFDocument.load(state.pdfBytes);
-                const sigWidth  = parseInt(document.getElementById('sigWidth')?.value || 150);
-                const sigOpacity= parseInt(document.getElementById('sigOpacity')?.value || 100) / 100;
-                const sigPos    = state.sigPosition || 'br';
-                const sigPages  = document.querySelector('input[name="sigPages"]:checked')?.value || 'all';
-                const indices   = getTargetIndices(sigPages, pdfDoc.getPageCount(), 'sigCustomPages');
+                const sigOpacity = parseInt(document.getElementById('sigOpacity')?.value || 100) / 100;
+                const sigPages   = document.querySelector('input[name="sigPages"]:checked')?.value || 'all';
+                const indices    = getTargetIndices(sigPages, pdfDoc.getPageCount(), 'sigCustomPages');
+                // Overlay-based positioning
+                const ov = state.sigOverlayPos || { leftPct: 0.60, topPct: 0.75, widthPct: 0.25 };
 
                 for (const idx of indices) {
                     const page = pdfDoc.getPages()[idx];
                     const { width, height } = page.getSize();
                     const img  = isPNG ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
-                    const dims = img.scaleToFit(sigWidth, sigWidth * 3);
-                    const {x,y} = calcPosition(sigPos, width, height, dims.width, dims.height, 20);
-                    page.drawImage(img, { x, y, width:dims.width, height:dims.height, opacity:sigOpacity });
+                    // Width from overlay percentage, maintain aspect ratio
+                    const sigWidthPts = ov.widthPct * width;
+                    const dims = img.scaleToFit(sigWidthPts, sigWidthPts * 5);
+                    // Convert screen coords (y=0 top) → PDF coords (y=0 bottom)
+                    const x = ov.leftPct * width;
+                    const y = height - ov.topPct * height - dims.height;
+                    page.drawImage(img, { x: Math.max(0, x), y: Math.max(0, y), width: dims.width, height: dims.height, opacity: sigOpacity });
                 }
 
                 const bytes = await pdfDoc.save();
@@ -2637,14 +2842,14 @@
 
         // Sig: mode toggle
         document.querySelectorAll('input[name="sigMode"]').forEach(r => r.addEventListener('change', () => {
-            document.querySelectorAll('.sig-mode-label').forEach(l=>{ l.classList.remove('border-indigo-500','bg-indigo-50','text-indigo-700'); l.classList.add('border-slate-200','text-slate-600'); });
-            r.closest('label').classList.add('border-indigo-500','bg-indigo-50','text-indigo-700'); r.closest('label').classList.remove('border-slate-200','text-slate-600');
+            document.querySelectorAll('.sig-mode-label').forEach(l=>{ l.classList.remove('border-indigo-500','bg-white','text-indigo-700'); l.classList.add('border-slate-200','text-slate-600'); });
+            r.closest('label').classList.add('border-indigo-500','bg-white','text-indigo-700'); r.closest('label').classList.remove('border-slate-200','text-slate-600');
             document.getElementById('sigDrawContainer')?.classList.toggle('hidden', r.value!=='draw');
             document.getElementById('sigUploadContainer')?.classList.toggle('hidden', r.value!=='upload');
+            // Update overlay when switching mode
+            updateSigOverlayImg();
         }));
-        // Sig: sliders
-        const sigWidthEl=document.getElementById('sigWidth'), sigWidthValEl=document.getElementById('sigWidthVal');
-        if(sigWidthEl) sigWidthEl.addEventListener('input',e=>{ if(sigWidthValEl) sigWidthValEl.textContent=e.target.value+'px'; });
+        // Sig: opacity slider
         const sigOpacityEl=document.getElementById('sigOpacity'), sigOpacityValEl=document.getElementById('sigOpacityVal');
         if(sigOpacityEl) sigOpacityEl.addEventListener('input',e=>{ if(sigOpacityValEl) sigOpacityValEl.textContent=e.target.value+'%'; });
         // Sig: custom pages
@@ -2657,6 +2862,25 @@
             state.sigImageIsPng=f.type==='image/png'||f.name.toLowerCase().endsWith('.png');
             const prev=document.getElementById('sigImagePreview');
             if(prev){ prev.src=URL.createObjectURL(f); prev.classList.remove('hidden'); }
+            // Auto-update overlay image
+            updateSigOverlayImg();
+        });
+        // Sig: refresh preview button (renders PDF page)
+        const btnSigRefreshPreview = document.getElementById('btnSigRefreshPreview');
+        if(btnSigRefreshPreview) btnSigRefreshPreview.addEventListener('click', () => renderSigPreview());
+        // Sig: update overlay image after drawing
+        const btnSigUpdatePreview = document.getElementById('btnSigUpdatePreview');
+        if(btnSigUpdatePreview) btnSigUpdatePreview.addEventListener('click', () => updateSigOverlayImg());
+        // Sig: init drag-drop (once)
+        initSigDragDrop();
+        // Sig: auto-render preview when switching to signature mode
+        el.btnModeSignature?.addEventListener('click', () => {
+            setTimeout(() => {
+                if (state.pdfBytes) {
+                    const empty = document.getElementById('sigPreviewEmpty');
+                    if (empty && empty.style.display !== 'none') renderSigPreview();
+                }
+            }, 200);
         });
         const btnSignature=document.getElementById('btnSignature');
         if(btnSignature) btnSignature.addEventListener('click', executeSignature);
