@@ -5584,51 +5584,11 @@
             bevietnam: '"Be Vietnam Pro","Roboto",Arial,sans-serif'
         };
 
-        // ── KaTeX CSS cache (fetched once, reused for all SVG math renders) ──
-        let _katexCssText = null;
-        async function getKatexCssText() {
-            if (_katexCssText !== null) return _katexCssText;
-            try {
-                const link = document.querySelector('link[href*="katex.min.css"]');
-                if (!link) { _katexCssText = ''; return ''; }
-                const base = link.href.substring(0, link.href.lastIndexOf('/') + 1);
-
-                // Fetch CSS and resolve relative font URLs → absolute CDN URLs
-                const res = await fetch(link.href);
-                let css = await res.text();
-                css = css.replace(/url\((['"]?)(?!https?:|data:)([^'")\s]+)\1\)/g,
-                    (_, q, path) => `url(${q}${base}${path}${q})`);
-
-                // SVG blobs cannot load external resources (browser security).
-                // We must embed the key math fonts as base64 data URIs.
-                const keyFonts = [
-                    'fonts/KaTeX_Math-Italic.woff2',
-                    'fonts/KaTeX_Main-Regular.woff2',
-                    'fonts/KaTeX_Main-Bold.woff2',
-                    'fonts/KaTeX_Main-Italic.woff2',
-                    'fonts/KaTeX_AMS-Regular.woff2',
-                    'fonts/KaTeX_Size1-Regular.woff2',
-                ];
-                const fontDataList = await Promise.all(keyFonts.map(async fp => {
-                    try {
-                        const r = await fetch(base + fp);
-                        if (!r.ok) return null;
-                        const buf = await r.arrayBuffer();
-                        const bytes = new Uint8Array(buf);
-                        let bin = '';
-                        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-                        return { url: base + fp, data: 'data:font/woff2;base64,' + btoa(bin) };
-                    } catch(e) { return null; }
-                }));
-                for (const fd of fontDataList) {
-                    if (fd) css = css.split(fd.url).join(fd.data);
-                }
-                _katexCssText = css;
-            } catch(e) { _katexCssText = ''; }
-            return _katexCssText;
-        }
-
-        // ── Render a LaTeX string to a canvas element via KaTeX + SVG foreignObject ──
+        // ── Render LaTeX → canvas via DOM layout (no SVG foreignObject → no canvas taint) ──
+        // SVG foreignObject in any form taints canvas (Chrome security spec).
+        // Instead: render KaTeX HTML in a hidden DOM div (fonts are loaded by the page),
+        // walk the element tree drawing text spans with fillText(), and draw KaTeX's own
+        // inline SVGs (radicals, arrows – no foreignObject) safely as clean SVG blobs.
         async function renderMathImg(latex, displayMode, pxSize, color) {
             if (typeof katex === 'undefined') return null;
             let html;
@@ -5636,49 +5596,121 @@
                 html = katex.renderToString(latex, { displayMode, throwOnError: false, strict: false });
             } catch(e) { return null; }
 
-            // Measure rendered size in DOM
-            const tmp = document.createElement('div');
-            tmp.style.cssText = `position:fixed;left:-9999px;top:0;font-size:${pxSize}px;` +
-                                 `color:${color};visibility:hidden;white-space:${displayMode?'normal':'nowrap'}`;
-            tmp.innerHTML = html;
-            document.body.appendChild(tmp);
+            // 1. Insert into DOM so browser does layout & loads KaTeX fonts
+            const wrap = document.createElement('div');
+            wrap.style.cssText = `position:fixed;left:-9999px;top:0;font-size:${pxSize}px;`
+                + `color:${color};visibility:hidden;pointer-events:none;`
+                + (displayMode ? 'white-space:normal;' : 'white-space:nowrap;');
+            wrap.innerHTML = html;
+            document.body.appendChild(wrap);
+            await document.fonts.ready;
+            // Two rAF calls: first triggers layout, second ensures paint metrics are settled
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+            const wr = wrap.getBoundingClientRect();
+            const W  = Math.max(Math.ceil(wrap.scrollWidth) + 10, 20);
+            const H  = Math.max(Math.ceil(wrap.scrollHeight) + 6, 16);
+
+            // Measure the true baseline (ascent = distance from canvas top to baseline).
+            // A zero-height inline element with vertical-align:baseline sits exactly at
+            // the baseline of its line box – its getBoundingClientRect().top IS the baseline.
+            const ghost = document.createElement('span');
+            ghost.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline;overflow:hidden;';
+            wrap.appendChild(ghost);
             await new Promise(r => requestAnimationFrame(r));
-            const W = Math.max(Math.ceil(tmp.scrollWidth)  + 10, 20);
-            const H = Math.max(Math.ceil(tmp.scrollHeight) +  6, 16);
-            document.body.removeChild(tmp);
+            const ghostRect = ghost.getBoundingClientRect();
+            // ascent = baseline Y position measured from the wrap's own top edge
+            const ascent = Math.max(1, Math.round(ghostRect.top - wr.top));
+            wrap.removeChild(ghost);
 
-            // Embed KaTeX CSS inline so SVG foreignObject renders correctly
-            const css = await getKatexCssText();
-            const scale = 2; // 2× for crispness
-            const svgW = W * scale, svgH = H * scale;
-            const svgStr = [
-                `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">`,
-                `<defs><style>`,
-                css,
-                `.katex{font-size:${pxSize*scale}px!important;color:${color}}`,
-                `.katex-display{margin:0!important;padding:2px 0}`,
-                `</style></defs>`,
-                `<foreignObject x="0" y="0" width="${svgW}" height="${svgH}">`,
-                `<div xmlns="http://www.w3.org/1999/xhtml"`,
-                ` style="font-size:${pxSize*scale}px;color:${color};line-height:1.2">`,
-                html,
-                `</div></foreignObject></svg>`
-            ].join('');
+            // 2. Create 2× canvas – drawn entirely with fillText / drawImage (no taint)
+            const scale = 2;
+            const cv = document.createElement('canvas');
+            cv.width  = W * scale;
+            cv.height = H * scale;
+            const cx  = cv.getContext('2d');
+            cx.scale(scale, scale);
 
-            return new Promise(resolve => {
-                const img = new Image();
-                const blob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
-                const url  = URL.createObjectURL(blob);
-                img.onload = () => {
-                    const cv = document.createElement('canvas');
-                    cv.width = svgW; cv.height = svgH;
-                    cv.getContext('2d').drawImage(img, 0, 0);
-                    URL.revokeObjectURL(url);
-                    resolve({ canvas: cv, W, H }); // W/H in CSS px (display size)
-                };
-                img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-                img.src = url;
-            });
+            // 3. Recursive DOM walker
+            async function draw(el) {
+                if (!el) return;
+                // Skip the MathML accessibility subtree (a11y only, not visual)
+                if (el.classList && el.classList.contains('katex-mathml')) return;
+
+                const tag = (el.tagName || '').toLowerCase();
+
+                // ── KaTeX inline SVGs (radical signs, arrows, extensible delimiters) ──
+                // These contain only paths/shapes – NO foreignObject → safe for canvas.
+                // IMPORTANT: KaTeX sets width/height in em units (e.g. "400em") on sqrt SVGs.
+                // A standalone SVG blob has no em context, so we must set explicit px dims.
+                if (tag === 'svg') {
+                    const r  = el.getBoundingClientRect();
+                    const rw = r.width, rh = r.height;
+                    if (rw < 0.5 || rh < 0.5) return; // skip invisible/zero-size SVGs
+                    const rx = r.left - wr.left;
+                    const ry = r.top  - wr.top;
+                    // Clone and set explicit pixel dimensions so the blob renders at the right size
+                    const svgClone = el.cloneNode(true);
+                    svgClone.setAttribute('width',  rw);
+                    svgClone.setAttribute('height', rh);
+                    svgClone.style.color = color; // resolve currentColor
+                    const svgStr = new XMLSerializer().serializeToString(svgClone);
+                    await new Promise(resolve => {
+                        const img  = new Image();
+                        const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+                        const url  = URL.createObjectURL(blob);
+                        img.onload = () => {
+                            cx.drawImage(img, rx, ry, rw, rh);
+                            URL.revokeObjectURL(url);
+                            resolve();
+                        };
+                        img.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+                        img.src = url;
+                    });
+                    return; // Don't recurse into SVG children
+                }
+
+                // ── Read computed style & bounding rect for ALL elements ──
+                const st = window.getComputedStyle(el);
+                const r  = el.getBoundingClientRect();
+                const rx = r.left - wr.left;
+                const ry = r.top  - wr.top;
+
+                // ── CSS border lines: fraction bars (.frac-line), overlines, underlines ──
+                // KaTeX renders these as empty spans with border-bottom / border-top.
+                // We draw them as filled rectangles at the correct visual position.
+                const bTopW = parseFloat(st.borderTopWidth)    || 0;
+                const bBotW = parseFloat(st.borderBottomWidth) || 0;
+                if (bTopW > 0.3 && st.borderTopStyle !== 'none') {
+                    cx.fillStyle = st.borderTopColor || color;
+                    cx.fillRect(rx, ry, r.width, Math.max(0.75, bTopW));
+                }
+                if (bBotW > 0.3 && st.borderBottomStyle !== 'none') {
+                    cx.fillStyle = st.borderBottomColor || color;
+                    cx.fillRect(rx, ry + r.height - Math.max(0.75, bBotW), r.width, Math.max(0.75, bBotW));
+                }
+
+                // ── Leaf element: draw its text content ──
+                if (el.children.length === 0) {
+                    const text = el.textContent;
+                    if (!text) return;
+                    const fs = parseFloat(st.fontSize) || pxSize;
+                    cx.font  = `${st.fontStyle} ${st.fontWeight} ${fs}px ${st.fontFamily}`;
+                    // actualBoundingBoxDescent: exact gap from baseline to element bottom
+                    const desc     = cx.measureText('gypj').actualBoundingBoxDescent || fs * 0.22;
+                    const baseline = (r.bottom - wr.top) - desc;
+                    cx.fillStyle   = color;
+                    cx.fillText(text, rx, baseline);
+                    return;
+                }
+
+                // ── Recurse into child elements ──
+                for (const child of el.children) await draw(child);
+            }
+
+            await draw(wrap.querySelector('.katex-html') || wrap);
+            document.body.removeChild(wrap);
+            return { canvas: cv, W, H, ascent };
         }
 
         // ── Inline parser: **bold**, *italic*, ***b+i***, `code`, $math$ ──
@@ -5829,9 +5861,10 @@
             let cx = x;
             for (const p of parts) {
                 if (p.mathImg) {
-                    // Baseline-align the math image (ascender ≈ 72% of font size)
-                    const { canvas: mc, W, H } = p.mathImg;
-                    const drawY = y - Math.round(sz * 0.72);
+                    // Use the measured ascent so the math baseline aligns with the text baseline.
+                    // ascent = distance from canvas top to the math baseline (varies by formula).
+                    const { canvas: mc, W, H, ascent } = p.mathImg;
+                    const drawY = y - (ascent != null ? ascent : Math.round(sz * 0.72));
                     ctx.drawImage(mc, cx, drawY, W, H);
                     cx += W + (p.spaceAfter ? 4 : 0);
                 } else if (p.mathLatex) {
