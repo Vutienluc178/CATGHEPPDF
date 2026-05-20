@@ -1750,6 +1750,7 @@
                                     <option value="19">Rất lớn (19px)</option>
                                     <option value="21">To (21px)</option>
                                     <option value="24">Rất to (24px)</option>
+                                    <option value="32">Cực lớn (32px)</option>
                                 </select>
                             </div>
                             <div class="space-y-1.5">
@@ -1790,6 +1791,16 @@
                                 <option value="bevietnam">Be Vietnam Pro</option>
                             </select>
                         </div>
+                        <div class="space-y-1.5 col-span-2">
+                            <label class="block text-xs font-medium text-slate-600">Khổ trang:</label>
+                            <select id="mdPageSize" class="w-full text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:border-violet-500 focus:outline-none">
+                                <option value="a4">📄 A4 Dọc — Chuẩn đọc (210×297mm)</option>
+                                <option value="slide16x9">🖥️ 16:9 Ngang — Trình chiếu</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="mdPageBreakHint" class="hidden text-xs text-violet-600 bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-2 leading-relaxed">
+                        💡 Dùng <code class="font-mono bg-violet-100 px-1 rounded">===</code> trên một dòng riêng để <b>ngắt slide</b> (tạo trang mới).<br>Đường kẻ ngang thường dùng <code class="font-mono bg-violet-100 px-1 rounded">---</code>.
                     </div>
 
                     <!-- THÔNG TIN -->
@@ -1806,11 +1817,17 @@
                         </div>
                     </div>
 
-                    <!-- BUTTON -->
-                    <button id="btnMdExport" class="w-full bg-violet-600 text-white hover:bg-violet-700 inline-flex items-center justify-center font-semibold rounded-xl px-4 py-3 text-sm transition-colors disabled:opacity-50 shadow-md gap-2">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Xuất PDF (Chuẩn điện thoại)
-                    </button>
+                    <!-- BUTTONS -->
+                    <div class="flex gap-2">
+                        <button id="btnMdPreview" class="flex-1 bg-white text-violet-700 hover:bg-violet-50 border-2 border-violet-400 hover:border-violet-600 inline-flex items-center justify-center font-semibold rounded-xl px-3 py-2.5 text-sm transition-colors disabled:opacity-50 gap-1.5">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Xem trước
+                        </button>
+                        <button id="btnMdExport" class="flex-1 bg-violet-600 text-white hover:bg-violet-700 inline-flex items-center justify-center font-semibold rounded-xl px-3 py-2.5 text-sm transition-colors disabled:opacity-50 shadow-md gap-1.5">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Xuất PDF
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -5753,6 +5770,7 @@
                     continue;
                 }
                 if (/^[-*_]{3,}$/.test(tr)) { blocks.push({type:'hr'}); continue; }
+                if (/^={3,}$/.test(tr))     { blocks.push({type:'pagebreak'}); continue; }
 
                 let m;
 
@@ -5887,15 +5905,20 @@
         // ── Main renderer → array of PNG data URLs (one per page, lossless) ──
         async function mdRenderPages(blocks, opts) {
             const { theme='light', fontSize=15, lineSpacing=1.6, quality=2, margin=55,
-                    fontKey='system', mathInlineCache=new Map(), mathDisplayCache=new Map() } = opts;
+                    fontKey='system', mathInlineCache=new Map(), mathDisplayCache=new Map(),
+                    pageSize='a4' } = opts;
             const C   = MD_THEMES[theme] || MD_THEMES.light;
             const fam = MD_FONTS[fontKey] || MD_FONTS.system;
             const q   = quality;
 
-            // Canvas = A4 at 96dpi × quality
-            const CW = Math.round(794*q), CH = Math.round(1123*q);
-            const ML = Math.round(margin*q), MR = Math.round(margin*q);
-            const MT = Math.round(65*q),     MB = Math.round(65*q);
+            // Canvas dimensions by page size
+            const isSlide = (pageSize === 'slide16x9');
+            const CW = isSlide ? Math.round(960*q)  : Math.round(794*q);
+            const CH = isSlide ? Math.round(540*q)  : Math.round(1123*q);
+            const ML = isSlide ? Math.round(56*q)   : Math.round(margin*q);
+            const MR = isSlide ? Math.round(56*q)   : Math.round(margin*q);
+            const MT = isSlide ? Math.round(36*q)   : Math.round(65*q);
+            const MB = isSlide ? Math.round(36*q)   : Math.round(65*q);
             const cW = CW - ML - MR;  // content width
 
             const sz   = Math.round(fontSize*q);
@@ -5956,6 +5979,10 @@
 
                     case 'break':
                         y += Math.round(LH*0.35);
+                        break;
+
+                    case 'pagebreak':
+                        pushPage(); newPage();
                         break;
 
                     case 'hr':
@@ -6084,6 +6111,7 @@
             const quality     = parseFloat(document.getElementById('mdQuality')?.value   || '2');
             const margin      = parseInt(document.getElementById('mdMargin')?.value      || '55', 10);
             const fontKey     = document.getElementById('mdFont')?.value || 'system';
+            const pageSize    = document.getElementById('mdPageSize')?.value || 'a4';
 
             const iBx  = document.getElementById('mdInfoBox');
             const pWrp = document.getElementById('mdProgressWrap');
@@ -6158,19 +6186,21 @@
                 }
 
                 prog(25, 'Đang render các trang…');
-                const pageUrls = await mdRenderPages(blocks, {theme, fontSize, lineSpacing, quality, margin, fontKey, mathInlineCache, mathDisplayCache});
+                const pageUrls = await mdRenderPages(blocks, {theme, fontSize, lineSpacing, quality, margin, fontKey, mathInlineCache, mathDisplayCache, pageSize});
 
                 prog(70, `Đang tạo PDF (${pageUrls.length} trang)…`);
 
                 const { PDFDocument } = PDFLib;
                 const pdfDoc = await PDFDocument.create();
+                // PDF page dimensions: A4 portrait or 16:9 landscape (960×540 pt ≈ 33.87×19.05cm)
+                const [pdfW, pdfH] = (pageSize === 'slide16x9') ? [960, 540] : [595.28, 841.89];
 
                 for (let i=0; i<pageUrls.length; i++) {
                     prog(70 + Math.round(i/pageUrls.length*25), `Nhúng trang ${i+1}/${pageUrls.length}…`);
                     const imgBytes = Uint8Array.from(atob(pageUrls[i].split(',')[1]), c=>c.charCodeAt(0));
                     const img = await pdfDoc.embedPng(imgBytes);
-                    const page = pdfDoc.addPage([595.28, 841.89]);
-                    page.drawImage(img, {x:0, y:0, width:595.28, height:841.89});
+                    const page = pdfDoc.addPage([pdfW, pdfH]);
+                    page.drawImage(img, {x:0, y:0, width:pdfW, height:pdfH});
                 }
 
                 prog(97, 'Đang lưu file…');
@@ -6179,21 +6209,156 @@
                 const url  = URL.createObjectURL(blob);
                 const a    = document.createElement('a');
                 a.href = url;
-                // Use timestamp for unique filename
-                a.download = `markdown_${new Date().toISOString().slice(0,10)}.pdf`;
+                const suffix = pageSize === 'slide16x9' ? '_slide16x9' : '';
+                a.download = `markdown${suffix}_${new Date().toISOString().slice(0,10)}.pdf`;
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 setTimeout(()=>URL.revokeObjectURL(url), 5000);
 
                 prog(100, 'Hoàn thành!');
-                showSuccess(`Đã xuất ${pageUrls.length} trang PDF thành công!`);
+                const modeLabel = pageSize === 'slide16x9' ? '🖥️ Slide 16:9' : '📄 A4 Dọc';
+                showSuccess(`Đã xuất ${pageUrls.length} trang PDF (${modeLabel}) thành công!`);
                 const fontLabel = {system:'System',roboto:'Roboto',notoserif:'Noto Serif',bevietnam:'Be Vietnam Pro'}[fontKey]||fontKey;
-                if(iBx) iBx.textContent = `✅ ${pageUrls.length} trang | Cỡ chữ ${fontSize}px | Font: ${fontLabel} | Chủ đề: ${theme} | Giãn dòng: ${lineSpacing}`;
+                if(iBx) iBx.textContent = `✅ ${pageUrls.length} trang | ${modeLabel} | Cỡ chữ ${fontSize}px | Font: ${fontLabel} | Chủ đề: ${theme}`;
 
             } catch(err) {
                 console.error(err);
                 showError('Lỗi khi tạo PDF: ' + err.message);
             } finally {
                 if(btn) btn.disabled=false;
+                setProcessing(false);
+            }
+        }
+
+        // ── MD Preview executor ──
+        async function executeMdPreview() {
+            const md = document.getElementById('mdInput')?.value?.trim() || '';
+            if (!md) { showError('Vui lòng dán nội dung Markdown vào ô văn bản.'); return; }
+
+            const theme       = document.querySelector('.md-theme-btn.md-theme-active')?.dataset.theme || 'light';
+            const fontSize    = parseInt(document.getElementById('mdFontSize')?.value    || '15', 10);
+            const lineSpacing = parseFloat(document.getElementById('mdLineSpacing')?.value || '1.6');
+            const quality     = Math.min(parseFloat(document.getElementById('mdQuality')?.value || '2'), 1.5);
+            const margin      = parseInt(document.getElementById('mdMargin')?.value      || '55', 10);
+            const fontKey     = document.getElementById('mdFont')?.value || 'system';
+            const pageSize    = document.getElementById('mdPageSize')?.value || 'a4';
+
+            const iBx  = document.getElementById('mdInfoBox');
+            const pWrp = document.getElementById('mdProgressWrap');
+            const pBar = document.getElementById('mdProgressBar');
+            const pPct = document.getElementById('mdProgressPct');
+            const pLbl = document.getElementById('mdProgressLabel');
+            const btnP = document.getElementById('btnMdPreview');
+            const btnE = document.getElementById('btnMdExport');
+
+            const prog = (pct, lbl) => {
+                if(pBar) pBar.style.width = pct + '%';
+                if(pPct) pPct.textContent = pct + '%';
+                if(pLbl) pLbl.textContent = lbl;
+            };
+
+            if(pWrp) pWrp.classList.remove('hidden');
+            if(iBx)  { iBx.classList.remove('hidden'); iBx.textContent = 'Đang tạo xem trước…'; }
+            if(btnP) btnP.disabled = true;
+            if(btnE) btnE.disabled = true;
+            setProcessing(true); hideMessages();
+
+            try {
+                prog(10, 'Đang phân tích Markdown…');
+                const blocks = mdParseBlocks(md);
+
+                // Font loading
+                const fam = MD_FONTS[fontKey] || MD_FONTS.system;
+                if (fontKey !== 'system') {
+                    prog(12, 'Đang tải font chữ…');
+                    const testEl = document.createElement('span');
+                    testEl.style.cssText = `position:fixed;left:-9999px;font-family:${fam};`;
+                    testEl.textContent = 'Kiểm tra font tiếng Việt';
+                    document.body.appendChild(testEl);
+                    await document.fonts.ready;
+                    document.body.removeChild(testEl);
+                }
+
+                // Pre-render math formulas
+                const C_colors = MD_THEMES[theme] || MD_THEMES.light;
+                const mathPxSize = fontSize * quality;
+                const mathInlineCache = new Map();
+                const mathDisplayCache = new Map();
+                if (typeof katex !== 'undefined') {
+                    const inlineLatex = new Set();
+                    const displayLatex = new Set();
+                    for (const block of blocks) {
+                        if (block.type === 'mathblock') displayLatex.add(block.latex);
+                        if (block.segs) {
+                            for (const s of block.segs) {
+                                if (s.math) inlineLatex.add(s.t);
+                            }
+                        }
+                    }
+                    const totalMath = inlineLatex.size + displayLatex.size;
+                    if (totalMath > 0) {
+                        prog(15, `Đang render ${totalMath} công thức toán…`);
+                        let done = 0;
+                        for (const latex of displayLatex) {
+                            const mi = await renderMathImg(latex, true, Math.round(mathPxSize * 1.2), C_colors.text);
+                            if (mi) mathDisplayCache.set(latex, mi);
+                            done++;
+                            prog(15 + Math.round(done / totalMath * 8), `Render công thức ${done}/${totalMath}…`);
+                        }
+                        for (const latex of inlineLatex) {
+                            const mi = await renderMathImg(latex, false, mathPxSize, C_colors.text);
+                            if (mi) mathInlineCache.set(latex, mi);
+                            done++;
+                            prog(15 + Math.round(done / totalMath * 8), `Render công thức ${done}/${totalMath}…`);
+                        }
+                    }
+                }
+
+                prog(25, 'Đang render các trang…');
+                const pageUrls = await mdRenderPages(blocks, {theme, fontSize, lineSpacing, quality, margin, fontKey, mathInlineCache, mathDisplayCache, pageSize});
+
+                // Populate preview gallery
+                prog(90, 'Đang hiển thị xem trước…');
+                const gallery = document.getElementById('previewGallery');
+                const empty   = document.getElementById('previewEmpty');
+                const pgText  = document.getElementById('previewPageText');
+
+                if (gallery) {
+                    gallery.innerHTML = '';
+                    const isSlideMode = (pageSize === 'slide16x9');
+                    pageUrls.forEach((url, i) => {
+                        const wrapper = document.createElement('div');
+                        // slides are wider: use max-w-lg for 16:9
+                        wrapper.className = `relative w-full ${isSlideMode ? 'max-w-lg' : 'max-w-sm'} shadow-xl rounded overflow-hidden`;
+
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.className = 'w-full block';
+                        img.alt = `Trang ${i + 1}`;
+
+                        const badge = document.createElement('div');
+                        badge.className = 'absolute bottom-2 right-2 bg-slate-900/70 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm';
+                        badge.textContent = isSlideMode ? `Slide ${i + 1}` : `Trang ${i + 1}`;
+
+                        wrapper.appendChild(img);
+                        wrapper.appendChild(badge);
+                        gallery.appendChild(wrapper);
+                    });
+                }
+
+                const modeLabel = pageSize === 'slide16x9' ? '🖥️ Slide 16:9' : '📄 A4 Dọc';
+                if (empty)  empty.classList.add('hidden');
+                if (pgText) { pgText.textContent = `${pageUrls.length} ${pageSize === 'slide16x9' ? 'slide' : 'trang'}`; pgText.classList.remove('hidden'); }
+
+                prog(100, 'Hoàn thành!');
+                showSuccess(`Xem trước ${pageUrls.length} ${pageSize === 'slide16x9' ? 'slide' : 'trang'} (${modeLabel}). Nhấn "Xuất PDF" để tải về.`);
+                if(iBx) iBx.textContent = `👁️ ${modeLabel} | ${pageUrls.length} ${pageSize === 'slide16x9' ? 'slide' : 'trang'} | Cỡ chữ ${fontSize}px | Chủ đề: ${theme}`;
+
+            } catch(err) {
+                console.error(err);
+                showError('Lỗi khi tạo xem trước: ' + err.message);
+            } finally {
+                if(btnP) btnP.disabled = false;
+                if(btnE) btnE.disabled = false;
                 setProcessing(false);
             }
         }
@@ -6234,8 +6399,17 @@
             if(cc) cc.textContent = '0 ký tự';
         });
 
+        // Preview button
+        document.getElementById('btnMdPreview')?.addEventListener('click', executeMdPreview);
+
         // Export button
         document.getElementById('btnMdExport')?.addEventListener('click', executeMdToPdf);
+
+        // Page size: show/hide slide hint
+        document.getElementById('mdPageSize')?.addEventListener('change', function() {
+            const hint = document.getElementById('mdPageBreakHint');
+            if(hint) hint.classList.toggle('hidden', this.value !== 'slide16x9');
+        });
 
         // ── Extract-image panel event listeners ──
 
