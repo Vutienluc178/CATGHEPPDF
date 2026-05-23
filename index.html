@@ -5772,6 +5772,34 @@
                 if (/^[-*_]{3,}$/.test(tr)) { blocks.push({type:'hr'}); continue; }
                 if (/^={3,}$/.test(tr))     { blocks.push({type:'pagebreak'}); continue; }
 
+                // Markdown table: consecutive lines starting with |
+                if (tr.startsWith('|')) {
+                    const tableLines = [line];
+                    while (i < lines.length && lines[i].trim().startsWith('|')) {
+                        tableLines.push(lines[i].trimEnd()); i++;
+                    }
+                    const parseRow = (l) => {
+                        const parts = l.trim().split('|');
+                        if (parts[0].trim() === '') parts.shift();
+                        if (parts.length > 0 && parts[parts.length-1].trim() === '') parts.pop();
+                        return parts.map(c => c.trim());
+                    };
+                    const isSepRow = (cells) => cells.length > 0 && cells.every(c => /^:?-+:?$/.test(c));
+                    const rows = tableLines.map(parseRow);
+                    if (rows.length >= 2 && isSepRow(rows[1])) {
+                        const nCols = rows[0].length;
+                        const headers = rows[0].map(h => mdParseInline(h));
+                        const dataRows = rows.slice(2).map(r => {
+                            while (r.length < nCols) r.push('');
+                            return r.slice(0, nCols).map(c => mdParseInline(c));
+                        });
+                        blocks.push({type:'table', headers, rows:dataRows, nCols});
+                    } else {
+                        for (const tl of tableLines) blocks.push({type:'p', segs:mdParseInline(tl.trim())});
+                    }
+                    continue;
+                }
+
                 let m;
 
                 // Display math: $$...$$ single-line
@@ -5998,6 +6026,88 @@
                         ctx.restore();
                         y += Math.round(LH*0.5);
                         break;
+
+                    case 'table': {
+                        const numCols = block.nCols || block.headers.length;
+                        if (numCols === 0) break;
+
+                        const padX  = Math.round(9*q),  padY = Math.round(7*q);
+                        const hSz   = Math.round(sz * 0.88);
+                        const cSz   = Math.round(sz * 0.84);
+                        const hLH   = Math.round(hSz * lineSpacing);
+                        const cLH   = Math.round(cSz * lineSpacing);
+                        const colW  = Math.floor(cW / numCols);
+                        const textW = Math.max(colW - padX * 2, 20);
+
+                        // Pre-wrap a row's cells → compute row height
+                        const wrapRowCells = (cells, fSz, fLH) => {
+                            const wrapped = [];
+                            for (let ci = 0; ci < numCols; ci++) {
+                                const segs = (cells[ci] && cells[ci].length) ? cells[ci] : [{t:' ', b:false, i:false}];
+                                wrapped.push(mdWrapSegs(ctx, segs, textW, fSz, fam, mathInlineCache));
+                            }
+                            const maxLines = Math.max(1, ...wrapped.map(w => w.length));
+                            return { wrapped, rowH: maxLines * fLH + padY * 2 };
+                        };
+
+                        // Draw one pre-wrapped row (no ensureY — caller handles it)
+                        const drawTableRow = (info, fSz, fLH, bgColor, fgColor, boldColor, isHeader) => {
+                            const rt = y;
+                            // Background
+                            ctx.fillStyle = bgColor;
+                            ctx.fillRect(ML, rt, cW, info.rowH);
+                            // Cell text
+                            for (let ci = 0; ci < info.wrapped.length; ci++) {
+                                const cellX = ML + ci * colW + padX;
+                                let   cellY = rt + padY + fSz;
+                                for (const parts of info.wrapped[ci]) {
+                                    mdDrawLine(ctx, parts, cellX, cellY, fSz, fam, fgColor, boldColor);
+                                    cellY += fLH;
+                                }
+                            }
+                            // Vertical separators
+                            ctx.save();
+                            ctx.strokeStyle = C.hr;
+                            ctx.lineWidth = Math.max(0.5, q * 0.5);
+                            ctx.globalAlpha = 0.4;
+                            for (let ci = 1; ci < numCols; ci++) {
+                                const sx = ML + ci * colW;
+                                ctx.beginPath(); ctx.moveTo(sx, rt); ctx.lineTo(sx, rt + info.rowH); ctx.stroke();
+                            }
+                            // Outer left & right border
+                            ctx.globalAlpha = 0.5;
+                            ctx.beginPath(); ctx.moveTo(ML,    rt); ctx.lineTo(ML,    rt + info.rowH); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(ML+cW, rt); ctx.lineTo(ML+cW, rt + info.rowH); ctx.stroke();
+                            // Bottom border
+                            ctx.globalAlpha = isHeader ? 1.0 : 0.3;
+                            ctx.lineWidth   = isHeader ? Math.max(1.5, q) : Math.max(0.5, q * 0.5);
+                            ctx.beginPath(); ctx.moveTo(ML, rt + info.rowH); ctx.lineTo(ML + cW, rt + info.rowH); ctx.stroke();
+                            ctx.restore();
+                            y += info.rowH;
+                        };
+
+                        // --- Header ---
+                        const headerInfo = wrapRowCells(block.headers, hSz, hLH);
+                        y += Math.round(LH * 0.5);
+                        ensureY(headerInfo.rowH);
+                        // Top border on same page as header
+                        ctx.save();
+                        ctx.strokeStyle = C.hr; ctx.lineWidth = Math.max(1, q); ctx.globalAlpha = 0.55;
+                        ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(ML + cW, y); ctx.stroke();
+                        ctx.restore();
+                        drawTableRow(headerInfo, hSz, hLH, C.h1, C.bg, C.bg, true);
+
+                        // --- Data rows (alternating bg) ---
+                        block.rows.forEach((row, ri) => {
+                            const rowBg = ri % 2 === 0 ? C.bg : C.quoteBg;
+                            const info  = wrapRowCells(row, cSz, cLH);
+                            ensureY(info.rowH);
+                            drawTableRow(info, cSz, cLH, rowBg, C.text, C.bold, false);
+                        });
+
+                        y += Math.round(LH * 0.5);
+                        break;
+                    }
 
                     case 'h1':
                         drawHeading(block.text, H1sz, C.h1, Math.round(LH*0.7), Math.round(LH*0.35));
