@@ -359,7 +359,7 @@
 
                 <div id="imagePanel" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-5">
                     <h3 class="font-semibold text-slate-800 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Ghép ảnh thành PDF (Khổ A4)
+                        <svg class="w-4 h-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Ghép ảnh thành PDF
                     </h3>
 
                     <div class="flex items-center justify-between">
@@ -373,6 +373,21 @@
                     <div id="imageList" class="space-y-2 max-h-64 overflow-y-auto pr-2"></div>
 
                     <div id="imageSettings" class="hidden space-y-3 pt-3 border-t">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-700">Khổ trang PDF:</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="img-pagesize-label flex flex-col items-center p-2.5 rounded-lg border-2 border-purple-500 bg-purple-50/50 cursor-pointer text-center text-xs transition-colors">
+                                    <input type="radio" name="imgPageSize" value="a4" class="hidden" checked />
+                                    <span class="font-semibold text-slate-700">📄 Khổ A4</span>
+                                    <span class="text-slate-400 mt-0.5">Ảnh canh giữa trong trang A4</span>
+                                </label>
+                                <label class="img-pagesize-label flex flex-col items-center p-2.5 rounded-lg border-2 border-slate-200 cursor-pointer text-center text-xs hover:border-purple-300 transition-colors">
+                                    <input type="radio" name="imgPageSize" value="fit" class="hidden" />
+                                    <span class="font-semibold text-slate-700">🖼️ Theo kích thước ảnh</span>
+                                    <span class="text-slate-400 mt-0.5">Mỗi trang vừa khít ảnh tương ứng</span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="space-y-1.5 mt-2">
                             <label class="block text-sm font-medium text-slate-700">Tên file kết quả</label>
                             <input type="text" id="imagePrefixInput" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500" placeholder="VD: TaiLieu_TuAnh" />
@@ -2610,6 +2625,8 @@
                 
                 const A4_WIDTH = 595.28;
                 const A4_HEIGHT = 841.89;
+                const MAX_PDF_DIM = 14400; // Giới hạn kích thước trang theo chuẩn PDF (points)
+                const pageSizeMode = document.querySelector('input[name="imgPageSize"]:checked')?.value || 'a4';
 
                 for (const img of state.imageFiles) {
                     let pdfImage;
@@ -2622,22 +2639,37 @@
                     }
 
                     const imgDims = pdfImage.scale(1);
-                    const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
 
-                    const scale = Math.min(A4_WIDTH / imgDims.width, A4_HEIGHT / imgDims.height);
-                    const drawWidth = imgDims.width * scale;
-                    const drawHeight = imgDims.height * scale;
+                    if (pageSizeMode === 'fit') {
+                        // Trang PDF có kích thước đúng theo ảnh (1px = 1pt), giới hạn theo chuẩn PDF
+                        let pw = imgDims.width;
+                        let ph = imgDims.height;
+                        if (pw > MAX_PDF_DIM || ph > MAX_PDF_DIM) {
+                            const ratio = MAX_PDF_DIM / Math.max(pw, ph);
+                            pw *= ratio;
+                            ph *= ratio;
+                        }
+                        const page = pdfDoc.addPage([pw, ph]);
+                        page.drawImage(pdfImage, { x: 0, y: 0, width: pw, height: ph });
+                    } else {
+                        const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
 
-                    const x = (A4_WIDTH - drawWidth) / 2;
-                    const y = (A4_HEIGHT - drawHeight) / 2;
+                        const scale = Math.min(A4_WIDTH / imgDims.width, A4_HEIGHT / imgDims.height);
+                        const drawWidth = imgDims.width * scale;
+                        const drawHeight = imgDims.height * scale;
 
-                    page.drawImage(pdfImage, { x: x, y: y, width: drawWidth, height: drawHeight });
+                        const x = (A4_WIDTH - drawWidth) / 2;
+                        const y = (A4_HEIGHT - drawHeight) / 2;
+
+                        page.drawImage(pdfImage, { x: x, y: y, width: drawWidth, height: drawHeight });
+                    }
                 }
 
                 const mergedBytes = await pdfDoc.save();
                 const prefix = el.imagePrefixInput ? (el.imagePrefixInput.value.trim() || 'TaiLieu_TuAnh') : 'TaiLieu_TuAnh';
                 triggerDownload(new Blob([mergedBytes], { type: 'application/pdf' }), `${prefix}.pdf`);
-                showSuccess("Tạo PDF thành công! File đang được tải xuống.");
+                const modeMsg = pageSizeMode === 'fit' ? "(khổ trang theo kích thước từng ảnh)" : "(khổ A4)";
+                showSuccess(`Tạo PDF thành công ${modeMsg}! File đang được tải xuống.`);
             } catch (err) {
                 showError("Lỗi khi tạo PDF: " + (err.message || "Không xác định"));
             } finally {
@@ -4484,6 +4516,18 @@
                 radio.closest('label').classList.remove('border-slate-200');
                 const customCont = document.getElementById('wmCustomPagesContainer');
                 if (customCont) customCont.classList.toggle('hidden', radio.value !== 'custom');
+            });
+        });
+
+        // === Ảnh sang PDF: khổ trang ===
+        document.querySelectorAll('input[name="imgPageSize"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('.img-pagesize-label').forEach(l => {
+                    l.classList.remove('border-purple-500','bg-purple-50/50');
+                    l.classList.add('border-slate-200');
+                });
+                radio.closest('label').classList.add('border-purple-500','bg-purple-50/50');
+                radio.closest('label').classList.remove('border-slate-200');
             });
         });
 
