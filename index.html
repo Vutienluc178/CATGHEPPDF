@@ -2729,6 +2729,44 @@
             }
         }
 
+        // Helper: render chữ dấu qua Canvas → PNG bytes
+        // Dùng system font của trình duyệt để hỗ trợ tiếng Việt đầy đủ (dấu thanh, ký tự đặc biệt)
+        function createWmCanvasImage(text, fontSize, colorR, colorG, colorB) {
+            return new Promise(resolve => {
+                const cvs = document.createElement('canvas');
+                const ctx = cvs.getContext('2d');
+                const fontStr = `bold ${fontSize}px "Segoe UI", "Arial Unicode MS", Arial, "Noto Sans", sans-serif`;
+                ctx.font = fontStr;
+                const m = ctx.measureText(text);
+                const textW   = Math.ceil(m.width);
+                const ascent  = Math.ceil(m.actualBoundingBoxAscent  || fontSize * 0.78);
+                const descent = Math.ceil(m.actualBoundingBoxDescent || fontSize * 0.22);
+                const padX = Math.ceil(fontSize * 0.18);
+                const padY = Math.ceil(fontSize * 0.12);
+                cvs.width  = textW + padX * 2;
+                cvs.height = ascent + descent + padY * 2;
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+                ctx.font = fontStr;
+                ctx.fillStyle = `rgb(${Math.round(colorR*255)},${Math.round(colorG*255)},${Math.round(colorB*255)})`;
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillText(text, padX, padY + ascent);
+                cvs.toBlob(async blob => {
+                    const buf = await blob.arrayBuffer();
+                    resolve({ bytes: new Uint8Array(buf), w: cvs.width, h: cvs.height });
+                }, 'image/png');
+            });
+        }
+
+        // Helper: tính toạ độ đặt ảnh để tâm ảnh (sau khi xoay) nằm đúng giữa trang
+        function wmCenterPos(pw, ph, iw, ih, deg) {
+            const rad = deg * Math.PI / 180;
+            const c = Math.cos(rad), s = Math.sin(rad);
+            return {
+                x: pw / 2 - (iw / 2 * c - ih / 2 * s),
+                y: ph / 2 - (iw / 2 * s + ih / 2 * c)
+            };
+        }
+
         async function executeWatermark() {
             try {
                 const PDFLibObj = getPDFLib();
@@ -2737,16 +2775,9 @@
                 setProcessing(true);
 
                 const PDFDocument = PDFLibObj.PDFDocument;
-                // Tải file PDF từ dữ liệu gốc mà người dùng đã upload
                 const pdfDoc = await PDFDocument.load(state.pdfBytes);
 
-                // Lấy nội dung người dùng nhập, nếu để trống dùng mặc định
-                const text = el.watermarkTextInput ? (el.watermarkTextInput.value.trim() || 'TÀI LIỆU NỘI BỘ') : 'TÀI LIỆU NỘI BỘ';
-
-                // Nhúng font chữ mặc định HelveticaBold (không cần tải thêm)
-                const font = await pdfDoc.embedFont(PDFLibObj.StandardFonts.HelveticaBold);
-
-                // Đọc tùy chọn từ giao diện
+                const text     = el.watermarkTextInput ? (el.watermarkTextInput.value.trim() || 'TÀI LIỆU NỘI BỘ') : 'TÀI LIỆU NỘI BỘ';
                 const fontSize = parseInt(document.getElementById('wmSize')?.value || 50);
                 const opacity  = parseInt(document.getElementById('wmOpacity')?.value || 25) / 100;
                 const wmStyle  = document.querySelector('input[name="wmStyle"]:checked')?.value || 'diagonal';
@@ -2754,10 +2785,18 @@
                 let colorR = 0.94, colorG = 0.27, colorB = 0.27;
                 if (state.wmColor) { colorR = state.wmColor.r; colorG = state.wmColor.g; colorB = state.wmColor.b; }
 
-                // Lấy toàn bộ trang
-                const allPages = pdfDoc.getPages();
+                // Render chữ lên canvas → PNG → nhúng vào PDF (hỗ trợ tiếng Việt hoàn toàn)
+                const wmImg    = await createWmCanvasImage(text, fontSize, colorR, colorG, colorB);
+                const pdfImage = await pdfDoc.embedPng(wmImg.bytes);
+                const imgW = wmImg.w, imgH = wmImg.h;
 
-                // Xác định trang cần đóng dấu
+                // Render chữ nhỏ hơn cho chế độ lát gạch
+                const tileScale  = Math.min(fontSize, 30) / Math.max(fontSize, 1);
+                const tileImgRaw = await createWmCanvasImage(text, Math.round(fontSize * tileScale), colorR, colorG, colorB);
+                const tilePdfImg = await pdfDoc.embedPng(tileImgRaw.bytes);
+                const tileW = tileImgRaw.w, tileH = tileImgRaw.h;
+
+                const allPages = pdfDoc.getPages();
                 let targetIndices = [];
                 if (wmPages === 'all') {
                     targetIndices = allPages.map((_, i) => i);
@@ -2771,53 +2810,31 @@
                     targetIndices = parseRanges(customVal, state.totalPages).map(p => p - 1);
                 }
 
-                // Vòng lặp: duyệt qua từng trang để in dấu
                 targetIndices.forEach(idx => {
                     const page = allPages[idx];
-                    // Lấy kích thước trang hiện tại
                     const { width, height } = page.getSize();
 
-                    // Tính toán chiều rộng/cao của text để căn giữa
-                    const textWidth  = font.widthOfTextAtSize(text, fontSize);
-                    const textHeight = font.heightAtSize(fontSize);
-                    const color = PDFLibObj.rgb(colorR, colorG, colorB);
-
                     if (wmStyle === 'diagonal') {
-                        // Xoay chéo 45° — căn giữa trang
-                        page.drawText(text, {
-                            x: (width - textWidth) / 2,
-                            y: (height - textHeight) / 2,
-                            size: fontSize, font, color, opacity,
-                            rotate: PDFLibObj.degrees(45)
-                        });
+                        const pos = wmCenterPos(width, height, imgW, imgH, 45);
+                        page.drawImage(pdfImage, { x: pos.x, y: pos.y, width: imgW, height: imgH, opacity, rotate: PDFLibObj.degrees(45) });
                     } else if (wmStyle === 'center') {
-                        // Nằm ngang — căn giữa trang
-                        page.drawText(text, {
-                            x: (width - textWidth) / 2,
-                            y: (height - textHeight) / 2,
-                            size: fontSize, font, color, opacity,
-                            rotate: PDFLibObj.degrees(0)
-                        });
+                        const pos = wmCenterPos(width, height, imgW, imgH, 0);
+                        page.drawImage(pdfImage, { x: pos.x, y: pos.y, width: imgW, height: imgH, opacity, rotate: PDFLibObj.degrees(0) });
                     } else if (wmStyle === 'tiled') {
-                        // Lát gạch 3×3 trải đều toàn trang
-                        const tileSize = Math.min(fontSize, 30);
-                        const tileW = font.widthOfTextAtSize(text, tileSize);
-                        const tileH = font.heightAtSize(tileSize);
                         for (let r = 0; r < 3; r++) {
                             for (let c = 0; c < 3; c++) {
-                                page.drawText(text, {
-                                    x: (width / 3) * c + (width / 3 - tileW) / 2,
-                                    y: (height / 3) * r + (height / 3 - tileH) / 2,
-                                    size: tileSize, font, color,
-                                    opacity: opacity * 0.85,
-                                    rotate: PDFLibObj.degrees(30)
+                                const cellCx = (width  / 3) * c + (width  / 3) / 2;
+                                const cellCy = (height / 3) * r + (height / 3) / 2;
+                                const pos = wmCenterPos(cellCx * 2, cellCy * 2, tileW, tileH, 30);
+                                page.drawImage(tilePdfImg, {
+                                    x: pos.x, y: pos.y, width: tileW, height: tileH,
+                                    opacity: opacity * 0.85, rotate: PDFLibObj.degrees(30)
                                 });
                             }
                         }
                     }
                 });
 
-                // Lưu và tải xuống
                 const modifiedBytes = await pdfDoc.save();
                 const prefix = state.file.name.replace('.pdf', '_BanQuyen');
                 triggerDownload(new Blob([modifiedBytes], { type: 'application/pdf' }), `${prefix}.pdf`);
@@ -3994,6 +4011,34 @@
         }
 
         // ---- Chèn văn bản ----
+        // Helper: render nhiều dòng văn bản qua Canvas → PNG bytes
+        // Dùng system font để hỗ trợ tiếng Việt đầy đủ (dấu thanh, ký tự đặc biệt)
+        function createInsertTextImage(lines, fontSize, colorR, colorG, colorB) {
+            return new Promise(resolve => {
+                const cvs = document.createElement('canvas');
+                const ctx = cvs.getContext('2d');
+                const fontStr = `${fontSize}px "Segoe UI", "Arial Unicode MS", Arial, "Noto Sans", sans-serif`;
+                ctx.font = fontStr;
+                const lineH = Math.ceil(fontSize * 1.4);
+                const padX  = Math.ceil(fontSize * 0.1);
+                const padY  = Math.ceil(fontSize * 0.1);
+                const maxW  = Math.max(1, ...lines.map(l => ctx.measureText(l).width));
+                cvs.width   = Math.ceil(maxW) + padX * 2;
+                cvs.height  = lines.length * lineH + padY * 2;
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+                ctx.font    = fontStr;
+                ctx.fillStyle = `rgb(${Math.round(colorR*255)},${Math.round(colorG*255)},${Math.round(colorB*255)})`;
+                ctx.textBaseline = 'top';
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, padX, padY + i * lineH);
+                });
+                cvs.toBlob(async blob => {
+                    const buf = await blob.arrayBuffer();
+                    resolve({ bytes: new Uint8Array(buf), w: cvs.width, h: cvs.height });
+                }, 'image/png');
+            });
+        }
+
         async function executeInsertText() {
             try {
                 if (!state.pdfBytes) return;
@@ -4003,28 +4048,25 @@
                 hideMessages(); setProcessing(true);
 
                 const PDFDocument = PDFLibObj.PDFDocument;
-                const pdfDoc = await PDFDocument.load(state.pdfBytes);
+                const pdfDoc   = await PDFDocument.load(state.pdfBytes);
                 const fontSize = parseInt(document.getElementById('insertTextSize')?.value || 14);
                 const opacity  = parseInt(document.getElementById('insertTextOpacity')?.value || 100) / 100;
                 const pos      = state.insertTextPosition || 'tl';
                 const color    = state.insertTextColor || { r:0.12, g:0.16, b:0.23 };
                 const pages    = document.querySelector('input[name="insertTextPages"]:checked')?.value || 'all';
                 const indices  = getTargetIndices(pages, pdfDoc.getPageCount(), 'insertTextCustomPages');
-                const font     = await pdfDoc.embedFont(PDFLibObj.StandardFonts.Helvetica);
                 const lines    = textContent.split('\n');
-                const lineH    = fontSize * 1.4;
+
+                // Render text qua canvas để hỗ trợ tiếng Việt đầy đủ
+                const img      = await createInsertTextImage(lines, fontSize, color.r, color.g, color.b);
+                const pdfImage = await pdfDoc.embedPng(img.bytes);
+                const imgW = img.w, imgH = img.h;
 
                 for (const idx of indices) {
                     const page = pdfDoc.getPages()[idx];
                     const { width, height } = page.getSize();
-                    const maxW  = Math.max(...lines.map(l => font.widthOfTextAtSize(l, fontSize)));
-                    const totalH= lines.length * lineH;
-                    const {x, y: yBase} = calcPosition(pos, width, height, maxW, totalH, 20);
-                    lines.forEach((line, i) => {
-                        const yLine = yBase - i * lineH + (totalH - lineH);
-                        if (yLine < 5 || yLine > height + 5) return;
-                        page.drawText(line, { x, y: yLine, size: fontSize, font, color: PDFLibObj.rgb(color.r, color.g, color.b), opacity });
-                    });
+                    const { x, y } = calcPosition(pos, width, height, imgW, imgH, 20);
+                    page.drawImage(pdfImage, { x, y, width: imgW, height: imgH, opacity });
                 }
 
                 const bytes = await pdfDoc.save();
